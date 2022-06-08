@@ -711,6 +711,13 @@ class KM_metals(object):
         # of kinematic group center
         self.id2 = []
 
+        # keep the means and stds of the resulting PCA
+        self.mean1 = []
+        self.mean2 = []
+        self.std1 = []
+        self.std2 = []
+        self.angles = []
+
         for i in range(len(self.names)):
             group = i
             ev_group = self.KM_metals['group'] == group
@@ -762,6 +769,18 @@ class KM_metals(object):
                 plt.title(self.names[i])
                 plt.show()
             self.id2 += list(self.stream_dfs['%d' % i]['ID'][self.stream_dfs['%d' % i]['group_pca_sig'] <= 2])
+
+            comps = []
+            As = []
+            for length, vector in zip(pca.explained_variance_, pca.components_):
+                v = vector * 3 * np.sqrt(length)
+                comps.append(np.sqrt(v[0] ** 2 + v[1] ** 2))
+                As.append(np.arctan(v[1] / v[0]) * (180 / np.pi))
+            self.mean1.append(pca.inverse_transform([mean1, mean2])[0])
+            self.mean2.append(pca.inverse_transform([mean1, mean2])[1])
+            self.std1.append(comps[0])
+            self.std2.append(comps[1])
+            self.angles.append(As[0])
 
     def estimate_age_distribution(self, gms, plot_dir):
         """
