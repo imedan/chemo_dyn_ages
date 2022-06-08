@@ -476,9 +476,9 @@ class GM_Age_GALAH(object):
 
                 
                 ax.scatter(t_mids, n / np.sum(n), c='k', label='Observed')
-                ax.errorbar(t_mids, n / np.sum(n), xerr=[1] * len(t_mids), fmt='none', ecolor='k', capsize=2)
+                ax.errorbar(t_mids, n / np.sum(n), xerr=[(self.ts[1] - self.ts[0]) / 2] * len(t_mids), fmt='none', ecolor='k', capsize=2)
                 ax.scatter(t_mids, mcmc[1, :], c='r', label='MCMC Fit')
-                ax.errorbar(t_mids, mcmc[1, :], xerr=[1] * len(t_mids),
+                ax.errorbar(t_mids, mcmc[1, :], xerr=[(self.ts[1] - self.ts[0]) / 2] * len(t_mids),
                              yerr=[q[0, :], q[1, :]], fmt='none', ecolor='r', capsize=2)
                 ax.set_xlabel('Age (Gyr)')
                 ax.set_ylabel('Fraction of Population')
@@ -968,7 +968,7 @@ class KM_metals(object):
                 ax1.scatter(t_mids, mcmc[1,:], c=color, label=self.names[group] + label)
                 ax1.hist(ts[:-1], bins=ts, weights=mcmc[1,:], facecolor=color, label='_nolabel_', alpha=0.3)
                 ax1.errorbar(t_mids, mcmc[1,:],
-                             yerr=[q[0,:], q[1,:]], xerr=[1] * len(t_mids),
+                             yerr=[q[0,:], q[1,:]], xerr=[(ts[1] - ts[0]) / 2] * len(t_mids),
                              fmt='none', ecolor=color, capsize=2)
 
                 ax2.scatter(Rb_bins_mid, Rb_stream1, c=color, label=self.names[group] + label)
