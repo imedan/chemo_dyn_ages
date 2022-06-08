@@ -760,7 +760,7 @@ class KM_metals(object):
                 ax2.set_ylim((5, 10))
                 plt.title(self.names[i])
                 plt.show()
-            self.id2 += list(self.stream_dfs['%d' % i]['ID_GAIA'][self.stream_dfs['%d' % i]['group_pca_sig'] <= 2])
+            self.id2 += list(self.stream_dfs['%d' % i]['ID'][self.stream_dfs['%d' % i]['group_pca_sig'] <= 2])
 
     def estimate_age_distribution(self, gms, plot_dir):
         """
@@ -814,7 +814,7 @@ class KM_metals(object):
                 self.all_age_dists[group].append(mcmc[1,:])
                 self.all_age_dists_errs[group].append(q[1,:])
 
-                ev_sig = self.KM_metals['ID_GAIA'].isin(data['ID_GAIA'][ev_group])
+                ev_sig = self.KM_metals['ID'].isin(data['ID'][ev_group])
                 self.KM_metals.loc[ev_sig, 'age_0'] += mcmc[1,0]
                 self.KM_metals.loc[ev_sig, 'age_1'] += mcmc[1,1]
                 self.KM_metals.loc[ev_sig, 'age_2'] += mcmc[1,2]
