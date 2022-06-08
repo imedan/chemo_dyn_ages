@@ -183,6 +183,117 @@ def mcmc_GM_fit(MH_norm, W, gms):
     return sampler, flat_samples
 
 
+def bootstrap_mean(x, N):
+    if len(x) > 50:
+        means = np.zeros(N)
+        for i in range(N):
+            means[i] = np.nanmean(x[np.random.randint(len(x), size=len(x))])
+        return np.mean(means), np.std(means)
+    else:
+        return np.nan, np.nan
+    
+def bootstrap_median(x ,N):
+    if len(x) > 50:
+        means = np.zeros(N)
+        for i in range(N):
+            means[i] = np.nanmedian(x[np.random.randint(len(x), size=len(x))])
+        return np.mean(means), np.std(means)
+    else:
+        return np.nan, np.nan
+    
+def bootstrap_std(x, N):
+    if len(x) > 50:
+        means = np.zeros(N)
+        for i in range(N):
+            means[i] = np.nanstd(x[np.random.randint(len(x), size=len(x))])
+        return np.mean(means), np.std(means)
+    else:
+        return np.nan, np.nan
+
+
+def compare_metals(MH_spec, MH_spec_err, MH_photo, ax1, ax2, survey_name):
+    """
+    compare photometric metallicities to spec.
+    and make the comparison plots
+    """
+    ax1.scatter(MH_photo, MH_spec, c='k', marker='.', label='N = %d' % len(MH_photo))
+    ax1.set_xlim((-1, 0.5))
+    ax1.set_ylim((-1, 0.5))
+    ax1.plot([-1, 0.5], [-1, 0.5], '--', c='r', label='_nolabel_')
+    ax1.set_xlabel(r'$[M/H]_{Photo}$')
+    ax1.set_ylabel(r'$%s$' % survey_name)
+    ax1.legend()
+    ax1.grid()
+
+
+    t2 = np.pi / 4
+    rotmat2 = np.array([[np.cos(t2), -np.sin(t2)], 
+                        [np.sin(t2),  np.cos(t2)]])
+
+    m2 = MH_spec - MH_photo
+
+    std_tot, std_tot_err = bootstrap_std(m2, 1000)
+    mean_spec, mean_spec_err = bootstrap_mean(np.array(MH_spec_err), 1000)
+
+    sys_err = np.sqrt(std_tot_err ** 2 * (std_tot / np.sqrt(std_tot ** 2 - mean_spec ** 2)) ** 2 + 
+                      mean_spec_err ** 2 * (mean_spec / np.sqrt(std_tot ** 2 - mean_spec ** 2)) ** 2)
+
+    Nbin, _, _ = ax2.hist(m2, bins=np.linspace(-.4, .4, 50), label=r'$\sigma_{tot}=$'+'%.4f+/-%.4f\n' % (std_tot,std_tot_err)+
+                          r'$\sigma_{sys}=$'+'%.4f+/-%.4f' % (np.sqrt(std_tot ** 2 - mean_spec ** 2), sys_err))
+    ax2.grid()
+    median = bootstrap_median(m2, 1000)
+    ax2.axvline(median[0], c='r', linestyle='--', label='Median = %.4f+/-%.4f' % median)
+    ax2.legend()
+    ax2.set_xlabel(r'$%s - [M/H]_{Photo}$' % survey_name)
+    ax2.set_ylabel('N')
+    ax2.set_ylim((0, max(Nbin) + 0.5 * max(Nbin)))
+
+
+def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
+                             KM_metals, plot_save):
+    """
+    compare spec metallicities of all surveys
+    """
+    hdu = fits.open(galah_file)
+
+    galah = Table(hdu[1].data).to_pandas()
+
+    galah = galah.drop_duplicates(subset='source_id', keep='first', ignore_index=True)
+    galah = galah.rename(columns={"source_id": "ID"})
+    galah = galah.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
+
+    hdu=fits.open(apogee_16_file)
+
+    apogee = Table(hdu[1].data)[['APOGEE_ID', 'GAIA_SOURCE_ID', 'M_H', 'M_H_ERR']].to_pandas()
+    apogee = apogee.drop_duplicates(subset='GAIA_SOURCE_ID',
+                                    keep='first', ignore_index=True)
+    apogee = apogee[abs(apogee['M_H'])<1000.].reset_index()
+    apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "ID"})
+    apogee = apogee.rename(columns={"M_H": "M_H_spec"})
+    apogee = apogee.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
+
+    hdu=fits.open(apogee_14_file)
+
+    apdr14 = Table(hdu[1].data)[['APOGEE_ID', 'M_H', 'M_H_ERR']].to_pandas()
+    apdr14 = apdr14.drop_duplicates(subset='APOGEE_ID',
+                                    keep='first', ignore_index=True)
+    apdr14 = apdr14[abs(apdr14['M_H'])<1000.].reset_index()
+    apdr14 = apdr14.rename(columns={"M_H": "M_H_spec"})
+    apdr14 = apdr14.merge(apogee[['ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
+    apdr14 = apdr14.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
+
+    f, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(20, 30))
+
+    compare_metals(apdr14['M_H_spec'], apdr14['M_H_ERR'],
+                   apdr14['M_H'], ax1, ax2, '[M/H]_{APOGEE_{DR14}}')
+    compare_metals(apogee['M_H_spec'], apogee['M_H_ERR'],
+                   apogee['M_H'], ax3, ax4, '[M/H]_{APOGEE_{DR16}')
+    compare_metals(galah['fe_h'], galah['e_fe_h'],
+                   galah['M_H'], ax5, ax6, '[Fe/H]_{GALAH_{DR3}}')
+    plt.savefig(plot_save, dpi=100, bbox_inches='tight')
+    plt.show()
+
+
 class GM_Age_GALAH(object):
     """
     used to find the GM used to define W vs [M/H] for various age bins
