@@ -486,7 +486,7 @@ class GM_Age_GALAH(object):
                 if npeaks == 2:
                     ax.set_ylim((0, 0.5))
                 else:
-                    ax_set_ylim((0, 0.65))
+                    ax.set_ylim((0, 0.65))
                 ax.grid()
                 ax.legend()
             plt.savefig('%s/GM_%d_peak_test_%d.png' % (plot_dir, npeaks, nadds),
@@ -678,19 +678,8 @@ class KM_metals(object):
                             skiprows=1)
         
         # grab the Gaia data
-        check = gaia1['ID'].isin(df1['Gaia_ID'])
-
-        df1['ID'] = np.array(gaia1['ID'][check])
-        df1['RA'] = np.array(gaia1['RA'][check])
-        df1['DEC'] = np.array(gaia1['DEC'][check])
-        df1['plx'] = np.array(gaia1['plx'][check])
-        df1['pmra'] = np.array(gaia1['pmra'][check])
-        df1['pmde'] = np.array(gaia1['pmde'][check])
-        df1['G'] = np.array(gaia1['G'][check])
-        df1['BP'] = np.array(gaia1['BP'][check])
-        df1['RP'] = np.array(gaia1['RP'][check])
-        df1['rv'] = np.array(gaia1['rv'][check])
-        df1['rv_err'] = np.array(gaia1['rv_err'][check])
+        df1 = df1.rename(columns={"Gaia_ID": "ID"})
+        df1 = df1.merge(gaia1, on='ID', join='inner')
 
         del gaia1
 
