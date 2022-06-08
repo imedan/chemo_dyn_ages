@@ -679,7 +679,7 @@ class KM_metals(object):
         
         # grab the Gaia data
         df1 = df1.rename(columns={"Gaia_ID": "ID"})
-        df1 = df1.merge(gaia1, on='ID', join='inner')
+        df1 = df1.merge(gaia1, on='ID', how='inner')
 
         del gaia1
 
