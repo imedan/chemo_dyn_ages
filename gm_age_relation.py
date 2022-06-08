@@ -105,37 +105,34 @@ def hist_2d_bootstrap(x, y, binx, biny, N):
     return np.mean(ns, axis=0), np.std(ns, axis=0)
 
 
-def est_sigma4(x, theta):    
+def est_sigma4(x, theta, ts):    
     y_mod = np.zeros(len(x[0]))
-    
-    ts = np.arange(0, 16, 2)
     t_mids = np.array([(ts[i] + ts[i + 1]) / 2 for i in range(len(ts) - 1)])
     for i in range(len(theta)):
         y_mod += theta[i] * x[i + 1]            
     return y_mod
 
 
-def log_likelihood(theta, x, y, yerr):
-    model = est_sigma4(x, theta)
+def log_likelihood(theta, x, y, yerr, ts):
+    model = est_sigma4(x, theta, ts)
     sigma2 = yerr ** 2
     return -0.5 * np.sum((y - model) ** 2 / sigma2 + np.log(sigma2))
 
 
 def log_prior(theta):
-    f1, f2, f3, f4, f5, f6, f7 = theta
-    if f1 > 0. and f2 > 0. and f3 > 0. and f4 > 0. and f5 > 0. and f6 > 0. and f7 > 0. and round(np.sum(theta), 4) == 1.:
+    if np.all(theta > 0) and round(np.sum(theta), 4) == 1.:
         return 0.0
     return -np.inf
 
 
-def log_probability(theta, x, y, yerr):
+def log_probability(theta, x, y, yerr, ts):
     lp = log_prior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + log_likelihood(theta, x, y, yerr)
+    return lp + log_likelihood(theta, x, y, yerr, ts)
 
 
-def mcmc_GM_fit(MH_norm, W, gms):
+def mcmc_GM_fit(MH_norm, W, gms, ts):
     """
     find the probably age distirbution based on GMM fit
     from GALAH and W, [M/H] of data
@@ -160,12 +157,12 @@ def mcmc_GM_fit(MH_norm, W, gms):
     for i in range(len(gms)):
         y_comps.append(np.exp(gms[i].score_samples(data_score)))
 
-    pos = np.random.rand(100, 7)
+    pos = np.random.rand(100, len(ts) - 1)
 
     for i in range(len(pos[:,0])):
         pos[i,:] = pos[i,:] / np.sum(pos[i,:])
 
-    pos += 1e-6 * np.random.randn(100, 7)
+    pos += 1e-6 * np.random.randn(100, len(ts) - 1)
 
     nwalkers, ndim = pos.shape
 
@@ -174,7 +171,7 @@ def mcmc_GM_fit(MH_norm, W, gms):
                                         ndim,
                                         log_probability,
                                         args=([Xmid.ravel()[ev_y]] + y_comps,
-                                              y[ev_y], yerr[ev_y]),
+                                              y[ev_y], yerr[ev_y], ts),
                                         pool=pool)
         sampler.run_mcmc(pos, 10000, progress=True)
 
@@ -379,9 +376,7 @@ class GM_Age_GALAH(object):
         cat = cat[ev].reset_index(drop=True)
         return cat
 
-    def find_GMMs(self, plot_dir=None):
-        ages = np.arange(0, 16, 2)
-
+    def find_GMMs(self, ages, plot_dir=None):
         gms = []
 
         self.cat['used_kde'] = 0
@@ -429,8 +424,9 @@ class GM_Age_GALAH(object):
                             dpi=100, bbox_inches='tight')
                 plt.show()
         self.gms = gms
+        self.ts = ages
 
-    def test_GMM_fit(self, Ntests, plot_dir, npeaks=1, plot_mcmc_prog=True):
+    def test_GMM_fit(self, Ntests, plot_dir, npeaks=1, plot_mcmc_prog=True, norm_adds=1):
         sig_all_2 = []
 
         for nadds in range(Ntests):
@@ -443,19 +439,19 @@ class GM_Age_GALAH(object):
             chi_2 = 0
             
             for ax in axs:
-                age_num = np.array([50, 50, 50, 50, 50, 50, 50])
-                if nadds >= 0:
+                age_num = np.array([50] * (len(self.ts) - 1))
+                age_num = age_num / norm_adds
+                if nadds > 0:
                     # how to add for 1 peak and 2 peak examples
                     if npeaks == 1:
-                        age_num[nadds - 1] += 250
+                        age_num[nadds - 1] += 250 / norm_adds
                     else:
-                        age_num[nadds] += 250
-                        age_num[nadds + 2] += 250
-                age_num = age_num * 2500 / np.sum(age_num)
-                ts = np.arange(0, 16, 2)
+                        age_num[nadds - 1] += 250 / norm_adds
+                        age_num[nadds - 1 + 2] += 250 / norm_adds
+                age_num = age_num * (2500 / norm_adds) / np.sum(age_num)
 
-                for i in range(len(ts) - 1):
-                    ev_age = eval("(self.cat['Age']>ts[i]) & (self.cat['Age']<ts[i+1]) & (self.cat['used_kde'] != 1)")
+                for i in range(len(self.ts) - 1):
+                    ev_age = eval("(self.cat['Age']>self.ts[i]) & (self.cat['Age']<self.ts[i+1]) & (self.cat['used_kde'] != 1)")
 
                     if len(self.cat[ev_age]) > age_num[i]:
                         idx += random.sample(list(self.cat[ev_age].index.values), int(age_num[i]))
@@ -463,11 +459,11 @@ class GM_Age_GALAH(object):
                         idx += random.sample(list(self.cat[ev_age].index.values), int(len(self.cat[ev_age])))
 
 
-                n, bins = np.histogram(self.cat.loc[idx, 'Age'], bins=np.arange(0, 16, 2))
+                n, bins = np.histogram(self.cat.loc[idx, 'Age'], bins=self.ts)
 
                 MH_norm = np.array(self.cat.loc[idx,'fe_h'] - (-0.03) * (self.cat.loc[idx,'xmix'] - 8.1))
                 W = np.array(self.cat.loc[idx,'WVel_gaia'])
-                sampler, flat_samples = mcmc_GM_fit(MH_norm, W, self.gms)
+                sampler, flat_samples = mcmc_GM_fit(MH_norm, W, self.gms, self.ts)
 
                 mcmc = np.percentile(flat_samples, [16, 50, 84],axis=0)
                 q = np.diff(mcmc,axis=0)
@@ -476,8 +472,7 @@ class GM_Age_GALAH(object):
                 
                 sig_all_2 += list((mcmc[1,:] - n / np.sum(n)) / q[1, :])
 
-                ts = np.arange(0, 16, 2)
-                t_mids = np.array([(ts[i] + ts[i + 1]) / 2 for i in range(len(ts) - 1)])
+                t_mids = np.array([(self.ts[i] + self.ts[i + 1]) / 2 for i in range(len(self.ts) - 1)])
 
                 
                 ax.scatter(t_mids, n / np.sum(n), c='k', label='Observed')
@@ -893,12 +888,11 @@ class KM_metals(object):
             self.std2.append(comps[1])
             self.angles.append(As[0])
 
-    def estimate_age_distribution(self, gms, plot_dir):
+    def estimate_age_distribution(self, gms, plot_dir, ts):
         """
         estimate the age distributions for all kinematic groups
         (compared to the background)
         """
-        ts = np.arange(0, 16, 2)
         t_mids = np.array([(ts[i] + ts[i + 1]) / 2 for i in range(len(ts) - 1)])
 
         Rb_bins = np.arange(0, 22, 2)  
@@ -937,7 +931,7 @@ class KM_metals(object):
                 xs = np.array(data['M_H'][ev_group] -
                               (-0.03) * (data['xmix'][ev_group] - 8.1) - 0.188)
                 ys = np.array(data['gw'][ev_group])
-                sampler, flat_samples = mcmc_GM_fit(xs, ys, gms)
+                sampler, flat_samples = mcmc_GM_fit(xs, ys, gms, ts)
 
                 mcmc = np.percentile(flat_samples, [16, 50, 84], axis=0)
                 q = np.diff(mcmc, axis=0)
