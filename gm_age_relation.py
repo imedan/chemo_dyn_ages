@@ -284,7 +284,7 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     compare_metals(apdr14['M_H_spec'], apdr14['M_H_ERR'],
                    apdr14['M_H'], ax1, ax2, '[M/H]_{APOGEE_{DR14}}')
     compare_metals(apogee['M_H_spec'], apogee['M_H_ERR'],
-                   apogee['M_H'], ax3, ax4, '[M/H]_{APOGEE_{DR16}')
+                   apogee['M_H'], ax3, ax4, '[M/H]_{APOGEE_{DR16}}')
     compare_metals(galah['fe_h'], galah['e_fe_h'],
                    galah['M_H'], ax5, ax6, '[Fe/H]_{GALAH_{DR3}}')
     plt.savefig(plot_save, dpi=100, bbox_inches='tight')
