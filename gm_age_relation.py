@@ -483,6 +483,10 @@ class GM_Age_GALAH(object):
                 ax.set_xlabel('Age (Gyr)')
                 ax.set_ylabel('Fraction of Population')
                 ax.set_xlim((0,14))
+                if npeaks == 2:
+                    ax.set_ylim((0, 0.5))
+                else:
+                    ax_set_ylim((0, 0.65))
                 ax.grid()
                 ax.legend()
             plt.savefig('%s/GM_%d_peak_test_%d.png' % (plot_dir, npeaks, nadds),
