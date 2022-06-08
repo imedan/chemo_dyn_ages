@@ -570,6 +570,7 @@ class KM_metals(object):
         # grab the Gaia data
         check = gaia1['ID'].isin(df1['Gaia_ID'])
 
+        df1['ID'] = np.array(gaia1['ID'][check])
         df1['RA'] = np.array(gaia1['RA'][check])
         df1['DEC'] = np.array(gaia1['DEC'][check])
         df1['plx'] = np.array(gaia1['plx'][check])
