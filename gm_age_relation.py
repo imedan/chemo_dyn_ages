@@ -12,12 +12,9 @@ import emcee
 from multiprocessing import Pool
 import random
 
-from sklearn.neighbors import KernelDensity
-from KDEpy import TreeKDE
 from sklearn.mixture import GaussianMixture
 
 from p_tqdm import p_map
-import os
 import time
 from galpy.actionAngle import actionAngleStaeckel
 from galpy.actionAngle import estimateDeltaStaeckel
