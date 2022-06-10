@@ -324,6 +324,7 @@ class GM_Age_GALAH(object):
                           galah_dr3,
                           keys='sobject_id',
                           join_type='inner')
+        galah_join = galah_join.to_dataframe()
 
         # select GALAH sources within 500 pc
         combined_data = {}
