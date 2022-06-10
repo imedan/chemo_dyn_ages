@@ -310,12 +310,18 @@ class GM_Age_GALAH(object):
         # match GALAH with GALAH ages (VAC)
         galah_hdu = fits.open(self.GALAH_path + 'GALAH_DR3_main_allstar_v2.fits')
         galah_hdu_ages = fits.open(self.GALAH_path + 'GALAH_DR3_VAC_ages_v2.fits')
+        galah_hdu_dr3 = fits.open(self.GALAH_path + 'GALAH_DR3_VAC_GaiaEDR3_v2.fits')
 
         galah = Table(galah_hdu[1].data)
         galah_ages = Table(galah_hdu_ages[1].data)
+        galah_dr3 = Table(galah_hdu_dr3[1].data)
 
         galah_join = join(galah[(galah['flag_sp'] == 0) & (galah['flag_fe_h'] == 0)],
                           galah_ages[galah_ages['e_age_bstep']/galah_ages['age_bstep'] < self.age_err_limit],
+                          keys='sobject_id',
+                          join_type='inner')
+        galah_join = join(galah_join,
+                          galah_dr3,
                           keys='sobject_id',
                           join_type='inner')
 
