@@ -256,7 +256,7 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     galah = Table(hdu[1].data).to_pandas()
 
     galah = galah.drop_duplicates(subset='source_id', keep='first', ignore_index=True)
-    galah = galah.rename(columns={"source_id": "ID"})
+    galah = galah.rename(columns={"dr3_source_id": "ID"})
     galah = galah.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
 
     hdu=fits.open(apogee_16_file)
