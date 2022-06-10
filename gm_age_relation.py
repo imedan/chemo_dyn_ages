@@ -308,8 +308,8 @@ class GM_Age_GALAH(object):
 
     def load_GALAH_data(self):
         # match GALAH with GALAH ages (VAC)
-        galah_hdu = fits.open(self.GALAH_path + 'GALAH_DR3_main_allstar_v1.fits')
-        galah_hdu_ages = fits.open(self.GALAH_path + 'GALAH_DR3_VAC_ages_v1.fits')
+        galah_hdu = fits.open(self.GALAH_path + 'GALAH_DR3_main_allstar_v2.fits')
+        galah_hdu_ages = fits.open(self.GALAH_path + 'GALAH_DR3_VAC_ages_v2.fits')
 
         galah = Table(galah_hdu[1].data)
         galah_ages = Table(galah_hdu_ages[1].data)
