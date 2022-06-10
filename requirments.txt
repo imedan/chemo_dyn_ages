@@ -1,0 +1,15 @@
+numpy
+astropy
+pandas
+matplotlib
+os
+emcee
+multiprocessing
+random
+sklearn
+p_tqdm
+galpy
+scipy
+functools
+tqdm
+time
