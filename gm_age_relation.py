@@ -37,6 +37,46 @@ from tqdm import trange
 def uvw(ra, de, pmra, pmde, dist, rv):
     """
     Calculate UVW velocity
+
+    Parameters
+    ----------
+    ra:
+        Right Ascension in degrees
+
+    dec:
+        Declination in degrees
+
+    pmra:
+        Proper motion in RA directionn in as/yr
+
+    pmde:
+        Proper motion in Decl. directionn in as/yr
+
+    dist:
+        Distance in pc
+
+    rv:
+        Radial velocity in km/s
+
+    Returns
+    -------
+    gx:
+        Galactic X distance (from Sun) in m
+
+    gy:
+        Galactic Y distance (from Sun) in m
+
+    gz:
+        Galactic Z distance (from Sun) in m
+
+    gu:
+        U velocity in km/s
+
+    gv:
+        V Velocity in km/s
+
+    gw:
+        W velocity in km/s
     """
     DEG = 57.2957764
     x = np.cos(de / DEG) * np.cos(ra / DEG)
@@ -92,6 +132,23 @@ def uvw(ra, de, pmra, pmde, dist, rv):
 def hist_2d_bootstrap(x, y, binx, biny, N):
     """
     bootstrap 2d histogram
+
+    Parameters
+    ----------
+    x: np.array
+        Data in x-direction
+
+    y: np.array
+        Data in y-direction
+
+    binx: np.array
+        Bins in x-direction
+
+    biny: np.array
+        Bins in y-direction
+
+    N: int
+        Number of iterations for bootstrap
     """
     n, binsx, binsy = np.histogram2d(x, y, bins=[binx, biny], density=True)
     ns = np.zeros((N, len(n.ravel())))
@@ -102,7 +159,29 @@ def hist_2d_bootstrap(x, y, binx, biny, N):
     return np.mean(ns, axis=0), np.std(ns, axis=0)
 
 
-def est_sigma4(x, theta, ts):    
+def est_sigma4(x, theta, ts):
+    """
+    Calculate the total W vs [M/H] distriubtion based on
+    fraction in each age bin
+
+    Parameters
+    ----------
+    x: list
+        input where first index is the X values of each bin in 2D hist
+        and second index is a list of the gaussian mixture model for each
+        age bin
+
+    theta: list
+        fraction for each age bin
+
+    ts: np.array
+        bin edges for the age bins
+
+    Returns
+    -------
+    y_mod: np.array
+        Resulting modeled distirbution
+    """ 
     y_mod = np.zeros(len(x[0]))
     t_mids = np.array([(ts[i] + ts[i + 1]) / 2 for i in range(len(ts) - 1)])
     for i in range(len(theta)):
@@ -111,18 +190,72 @@ def est_sigma4(x, theta, ts):
 
 
 def log_likelihood(theta, x, y, yerr, ts):
+    """
+    Calculate the log likelihood
+
+    Parameters
+    ----------
+    theta: list
+        fraction for each age bin
+
+    x: list
+        input where first index is the X values of each bin in 2D hist
+        and second index is a list of the gaussian mixture model for each
+        age bin
+
+    y: np.array
+        1D array (so raveled 2D hist) of the observed data
+
+    yerr: np.array
+        1D array (so raveled 2D hist) of the errors on observed data
+
+    ts: np.array
+        bin edges for the age bins
+
+    Returns
+    -------
+    log_like: float
+        Resulting log likelihood
+    """
     model = est_sigma4(x, theta, ts)
     sigma2 = yerr ** 2
-    return -0.5 * np.sum((y - model) ** 2 / sigma2 + np.log(sigma2))
+    log_like = -0.5 * np.sum((y - model) ** 2 / sigma2 + np.log(sigma2))
+    return log_like
 
 
 def log_prior(theta):
+    """
+    returns either 0 or inf based on if prior is contrained or not
+    """
     if np.all(theta > 0) and round(np.sum(theta), 4) == 1.:
         return 0.0
     return -np.inf
 
 
 def log_probability(theta, x, y, yerr, ts):
+    """
+    Calculatate the model probability based on prior and
+    log likelihood
+
+    Parameters
+    ----------
+    theta: list
+        fraction for each age bin
+
+    x: list
+        input where first index is the X values of each bin in 2D hist
+        and second index is a list of the gaussian mixture model for each
+        age bin
+
+    y: np.array
+        1D array (so raveled 2D hist) of the observed data
+
+    yerr: np.array
+        1D array (so raveled 2D hist) of the errors on observed data
+
+    ts: np.array
+        bin edges for the age bins 
+    """
     lp = log_prior(theta)
     if not np.isfinite(lp):
         return -np.inf
@@ -133,6 +266,28 @@ def mcmc_GM_fit(MH_norm, W, gms, ts):
     """
     find the probably age distirbution based on GMM fit
     from GALAH and W, [M/H] of data
+
+    Parameters
+    ----------
+    MH_norm: np.array
+        The metallicity corrected for radial gradient
+
+    W: np.array
+        W velocities
+
+    gms: list
+        Gaussian Mixture models for each age bin
+
+    ts: np.array
+        bin edges for the age bins
+
+    Returns
+    -------
+    sampler:
+        The sampler from emcee
+
+    flat_samples:
+        The flattened samples for each walker after trimming
     """
     binx = np.arange(-1.5, 0.6, 0.1) + 0.5
     binx_mid = np.array([(binx[i] + binx[i + 1]) / 2 for i in range(len(binx) - 1)])
@@ -178,6 +333,9 @@ def mcmc_GM_fit(MH_norm, W, gms, ts):
 
 
 def bootstrap_mean(x, N):
+    """
+    bootstrap the mean of sample x over N iterations
+    """
     if len(x) > 50:
         means = np.zeros(N)
         for i in range(N):
@@ -187,6 +345,9 @@ def bootstrap_mean(x, N):
         return np.nan, np.nan
     
 def bootstrap_median(x ,N):
+    """
+    bootstrap the median of sample x over N iterations
+    """
     if len(x) > 50:
         means = np.zeros(N)
         for i in range(N):
@@ -196,6 +357,9 @@ def bootstrap_median(x ,N):
         return np.nan, np.nan
     
 def bootstrap_std(x, N):
+    """
+    bootstrap the standard deviation of sample x over N iterations
+    """
     if len(x) > 50:
         means = np.zeros(N)
         for i in range(N):
@@ -209,6 +373,26 @@ def compare_metals(MH_spec, MH_spec_err, MH_photo, ax1, ax2, survey_name):
     """
     compare photometric metallicities to spec.
     and make the comparison plots
+    
+    Parameters
+    ----------
+    MH_spec:
+        spectroscopic metallicities
+
+    MH_spec_err:
+        Errors in spectroscopic metallicities
+
+    MH_photo:
+        Corresponding photometric metallicities
+
+    ax1:
+        matplotlib axis for 1-to-1 plot
+
+    ax2:
+        matplotlib axis for difference histogram
+    
+    survey_name: str
+        Label to use for spectroscopic metallicity axis
     """
     ax1.scatter(MH_photo, MH_spec, c='k', marker='.', label='N = %d' % len(MH_photo))
     ax1.set_xlim((-1, 0.5))
@@ -247,6 +431,23 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
                              KM_metals, plot_save):
     """
     compare spec metallicities of all surveys
+
+    Parameters
+    ----------
+    galah_file: str
+        path to Galah file
+
+    apogee_16_file: str
+        Path to APOGEE DR16 file
+
+    apogee_14_file: str
+        Path to APOGEE DR14 file
+
+    KM_metals: pd.DataFrame
+        photometric metallicity dataframe from KM_Metals()
+
+    plot_save: str
+        Name of file to save plot as
     """
     hdu = fits.open(galah_file)
 
@@ -292,6 +493,26 @@ class GM_Age_GALAH(object):
     """
     used to find the GM used to define W vs [M/H] for various age bins
     in the GALAH dataset
+
+    Parameters
+    ----------
+    GALAH_path: str
+        path to where GALAH files are stored
+
+    age_err_limit: float
+        Maximum age error for ages in GALAH used
+
+    distance_limit: float
+        Distance limit to use for GALAH sample
+
+    Rsun: float
+        Galactocentric radius of the Sun in m
+
+    zsun: float
+        Galactocentric z of the Sun in m
+
+    vphi_sun: float
+        V_phi of Sun in km/s
     """
     def __init__(self, GALAH_path, age_err_limit=0.2, distance_limit=500,
                  Rsun=8100., zsun=21., vphi_sun=248.5):
@@ -304,6 +525,10 @@ class GM_Age_GALAH(object):
         self.cat = self.load_GALAH_data()
 
     def load_GALAH_data(self):
+        """
+        Load the Galah data from the appropriate files and with the
+        specified limits
+        """
         # match GALAH with GALAH ages (VAC)
         galah_hdu = fits.open(self.GALAH_path + 'GALAH_DR3_main_allstar_v2.fits')
         galah_hdu_ages = fits.open(self.GALAH_path + 'GALAH_DR3_VAC_ages_v2.fits')
@@ -381,6 +606,18 @@ class GM_Age_GALAH(object):
         return cat
 
     def find_GMMs(self, ages, plot_dir=None):
+        """
+        Calculate Gaussian Mixture models for GALAH data for some
+        binning in age
+
+        Parameters
+        ----------
+        ages:
+            Ages of GALAH sources
+
+        plot_dir: str
+            Directory to store resulting GM plots
+        """
         gms = []
 
         self.cat['used_kde'] = 0
@@ -431,6 +668,33 @@ class GM_Age_GALAH(object):
         self.ts = ages
 
     def test_GMM_fit(self, Ntests, plot_dir, npeaks=1, plot_mcmc_prog=True, norm_adds=1):
+        """
+        Test the GM fitting for a subset of GALAH with a known age distribution
+
+        Parameters
+        ----------
+        Ntests: int
+            Number of total tests to conduct. This will always start with
+            uniform distribution and then add npeaks from youngest to
+            oldest ages
+
+        plot_dir: str
+            Directory to store the plots
+
+        npeaks: int
+            Number of peaks in test distributions
+
+        plot_mcmc_prog: bool
+            Plot the overall progress of emcee
+
+        norm_adds: int
+            Dont need to change this
+
+        Returns
+        -------
+        sig_all_2: list
+            Number of sigma all datapoints are from true value
+        """
         sig_all_2 = []
 
         for nadds in range(Ntests):
