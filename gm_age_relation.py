@@ -1206,6 +1206,9 @@ class KM_metals(object):
         self.all_age_dists = {}
         self.all_age_dists_errs = {}
 
+        for i in range(len(ts)):
+            self.KM_metals['age_%d' % i] = 0
+
         for group in range(len(self.names)):
             xmin = np.min(self.stream_dfs['%d' % group]['xmix'][self.stream_dfs['%d' % group]['group_pca_sig'] <= 2])
             xmax = np.max(self.stream_dfs['%d' % group]['xmix'][self.stream_dfs['%d' % group]['group_pca_sig'] <= 2])
@@ -1244,13 +1247,8 @@ class KM_metals(object):
                 self.all_age_dists_errs[group].append(q[1,:])
 
                 ev_sig = self.KM_metals['ID'].isin(data['ID'][ev_group])
-                self.KM_metals.loc[ev_sig, 'age_0'] += mcmc[1,0]
-                self.KM_metals.loc[ev_sig, 'age_1'] += mcmc[1,1]
-                self.KM_metals.loc[ev_sig, 'age_2'] += mcmc[1,2]
-                self.KM_metals.loc[ev_sig, 'age_3'] += mcmc[1,3]
-                self.KM_metals.loc[ev_sig, 'age_4'] += mcmc[1,4]
-                self.KM_metals.loc[ev_sig, 'age_5'] += mcmc[1,5]
-                self.KM_metals.loc[ev_sig, 'age_6'] += mcmc[1,6]
+                for i in range(len(ts)):
+                    self.KM_metals.loc[ev_sig, 'age_%d' % i] += mcmc[1, i]
 
                 # determine the Rbirth distribution
                 mh_bins = np.arange(-1.5, 0.6, 0.1)
