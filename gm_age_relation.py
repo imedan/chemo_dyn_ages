@@ -1228,7 +1228,7 @@ class KM_metals(object):
             colors = ['k', 'b', 'r']
             labels = [r' $[(U,x_{mix}) \leq 1 \sigma]$',
                       r' $[1 \sigma < (U,x_{mix}) \leq 2 \sigma]$',
-                      r'Background']
+                      r' Background']
             df_type = ['stream', 'stream', 'KM']
             for ev_group, color, label, dft in zip(ev_groups, colors, labels, df_type):
                 if dft == 'stream':
