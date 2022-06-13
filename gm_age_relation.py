@@ -465,7 +465,7 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     apogee = apogee[abs(apogee['M_H'])<1000.].reset_index()
     apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "d2_ID"})
     apogee = apogee.rename(columns={"M_H": "M_H_spec"})
-    apogee = apogee.merge(KM_metals[['M_H', 'd2_ID']], on='d2_ID', how='inner')
+    apogee = apogee.merge(KM_metals[['M_H', 'dr2_ID']], on='dr2_ID', how='inner')
 
     hdu=fits.open(apogee_14_file)
 
@@ -475,7 +475,7 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     apdr14 = apdr14[abs(apdr14['M_H'])<1000.].reset_index()
     apdr14 = apdr14.rename(columns={"M_H": "M_H_spec"})
     apdr14 = apdr14.merge(apogee[['d2_ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
-    apdr14 = apdr14.merge(KM_metals[['M_H', 'd2_ID']], on='d2_ID', how='inner')
+    apdr14 = apdr14.merge(KM_metals[['M_H', 'dr2_ID']], on='dr2_ID', how='inner')
 
     f, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(20, 30))
 
@@ -915,11 +915,12 @@ class KM_metals(object):
     """
     Find probable age distributions for KM stars in SN
     """
-    def __init__(self,  metals_file, gaia_file,
+    def __init__(self,  metals_file, gaia_file, gaia_dr2_match_file,
                  Rsun=8100., zsun=21., vphi_sun=248.5,
                  metal_err_cut=0.3):
         self.metals_file = metals_file
         self.gaia_file = gaia_file
+        self.gaia_dr2_match_file = gaia_dr2_match_file
         self.Rsun = Rsun
         self.zsun = zsun
         self.vphi_sun = vphi_sun
@@ -940,10 +941,17 @@ class KM_metals(object):
         df1 = pd.read_csv(self.metals_file, delim_whitespace=True)
 
         gaia1 = pd.read_csv(self.gaia_file,
-                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 19],
+                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15],
                             names=['RA', 'DEC', 'ID', 'plx', 'pmra',
-                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err', 'd2_ID'],
+                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err'],
                             skiprows=1)
+
+        gaia_dr2 = pd.read_csv(self.gaia_dr2_match_file,
+                               names=['ID', 'dr2_ID', 'ang_dist'],
+                               skiprows=1)
+        gaia_dr2 = gaia_dr2.sort_values(by=['ID', 'ang_dist'])
+        gaia_dr2 = gaia_dr2.drop_duplicates(subset='ID', keep='first')
+        gaia1 = gaia1.merge(gaia_dr2, on='ID', how='left')
         
         # grab the Gaia data
         df1 = df1.rename(columns={"Gaia_ID": "ID"})
@@ -988,12 +996,12 @@ class KM_metals(object):
         phi = np.arcsin(KM_metals['dist'] * 1e-3 * np.sin(np.radians(l)) / KM_metals['R'])
         KM_metals['xmix'] = R_G * np.cos(phi)
 
-        # r = p_map(partial(loop, KM_metals), KM_metals.index.to_list(), num_cpus=4)
+        r = p_map(partial(loop, KM_metals), KM_metals.index.to_list(), num_cpus=4)
 
-        # r = np.array(r)
-        # KM_metals['J_R'] = r[:,0]
-        # KM_metals['L_Z'] = r[:,1]
-        # KM_metals['J_Z'] = r[:,2]
+        r = np.array(r)
+        KM_metals['J_R'] = r[:,0]
+        KM_metals['L_Z'] = r[:,1]
+        KM_metals['J_Z'] = r[:,2]
 
         return KM_metals
 
