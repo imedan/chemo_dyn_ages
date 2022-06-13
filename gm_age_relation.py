@@ -1213,7 +1213,7 @@ class KM_metals(object):
             self.all_age_dists_errs[group] = []
 
             ev1 = (self.KM_metals['xmix'] >= xmin) & (self.KM_metals['xmix'] <= xmax)
-            ev2 = self.KM_metals['ID_GAIA'].isin(self.id2)
+            ev2 = self.KM_metals['ID'].isin(self.id2)
 
             f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
 
