@@ -1162,6 +1162,7 @@ class KM_metals(object):
             self.std1.append(comps[0])
             self.std2.append(comps[1])
             self.angles.append(As[0])
+        f.close()
 
     def estimate_age_distribution(self, gms, plot_dir, ts):
         """
