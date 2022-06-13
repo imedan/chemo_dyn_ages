@@ -455,7 +455,7 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
 
     galah = Table(hdu[1].data).to_pandas()
 
-    galah = galah.drop_duplicates(subset='source_id', keep='first', ignore_index=True)
+    galah = galah.drop_duplicates(subset='dr3_source_id', keep='first', ignore_index=True)
     galah = galah.rename(columns={"dr3_source_id": "ID"})
     galah = galah.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
 
@@ -465,9 +465,10 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     apogee = apogee.drop_duplicates(subset='GAIA_SOURCE_ID',
                                     keep='first', ignore_index=True)
     apogee = apogee[abs(apogee['M_H'])<1000.].reset_index()
-    apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "d2_ID"})
+    apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "dr2_ID"})
     apogee = apogee.rename(columns={"M_H": "M_H_spec"})
-    apogee = apogee.merge(KM_metals[['M_H', 'dr2_ID']], on='dr2_ID', how='inner')
+    apogee = apogee.merge(KM_metals[['M_H', 'dr2_ID']][~np.isnan(KM_metals['dr2_ID'])],
+                          on='dr2_ID', how='inner')
 
     hdu=fits.open(apogee_14_file)
 
@@ -476,8 +477,9 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
                                     keep='first', ignore_index=True)
     apdr14 = apdr14[abs(apdr14['M_H'])<1000.].reset_index()
     apdr14 = apdr14.rename(columns={"M_H": "M_H_spec"})
-    apdr14 = apdr14.merge(apogee[['d2_ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
-    apdr14 = apdr14.merge(KM_metals[['M_H', 'dr2_ID']], on='dr2_ID', how='inner')
+    apdr14 = apdr14.merge(apogee[['dr2_ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
+    apdr14 = apdr14.merge(KM_metals[['M_H', 'dr2_ID']][~np.isnan(KM_metals['dr2_ID'])],
+                          on='dr2_ID', how='inner')
 
     f, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(20, 30))
 
@@ -1167,7 +1169,7 @@ class KM_metals(object):
 
             comps = []
             As = []
-            line = [names[i]]
+            line = [self.names[i]]
             for length, vector in zip(pca.explained_variance_, pca.components_):
                 v = vector * 3 * np.sqrt(length)
                 comps.append(np.sqrt(v[0] ** 2 + v[1] ** 2))
@@ -1178,10 +1180,10 @@ class KM_metals(object):
             line.append(comps[0])
             line.append(comps[1])
             line.append(As[0]*-1)
-            line.append(len(stream_dfs['%d' % i][stream_dfs['%d' % i]['group_pca_sig']==1.]))
-            line.append(len(stream_dfs['%d' % i][stream_dfs['%d' % i]['group_pca_sig']==2.]))
-            line.append(len(stream_dfs['%d' % i][stream_dfs['%d' % i]['group_pca_sig']==3.]))
-            f.write('%s & %.3f & %.3f & %.3f & %.3f & %.3f & %d & %d & %d \n' % line)
+            line.append(len(self.stream_dfs['%d' % i][self.stream_dfs['%d' % i]['group_pca_sig']==1.]))
+            line.append(len(self.stream_dfs['%d' % i][self.stream_dfs['%d' % i]['group_pca_sig']==2.]))
+            line.append(len(self.stream_dfs['%d' % i][self.stream_dfs['%d' % i]['group_pca_sig']==3.]))
+            f.write('%s & %.3f & %.3f & %.3f & %.3f & %.3f & %d & %d & %d \n' % tuple(line))
             self.mean1.append(pca.inverse_transform([mean1, mean2])[0])
             self.mean2.append(pca.inverse_transform([mean1, mean2])[1])
             self.std1.append(comps[0])
