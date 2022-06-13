@@ -1283,15 +1283,15 @@ class KM_metals(object):
             ax1.set_ylabel('Fraction of Population')
             ax1.set_xlim((0, 14))
             ax1.set_ylim((0, 0.9))
-            ax1.legend(prop={'size': 12.5})
+            ax1.legend(prop={'size': 14})
 
             ax2.grid()
             ax2.set_xlabel(r'$R_{Birth}$')
             ax2.set_ylabel('N (Normalized)')
             ax2.set_xlim((0, 20))
             ax2.set_ylim((0, 0.22))
-            ax2.legend(prop={'size': 12.5})
-
+            ax2.legend(prop={'size': 14})
+            plt.tight_layout()
             plt.savefig('%s/%s_age_fit_sigma_regions_same_scale.png' % (plot_dir, self.names[group].replace(' ', '_')),
                         bbox_inches='tight', dpi=100)
             plt.show()
