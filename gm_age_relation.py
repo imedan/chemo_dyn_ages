@@ -1206,7 +1206,7 @@ class KM_metals(object):
         self.all_age_dists = {}
         self.all_age_dists_errs = {}
 
-        for group in trange(len(self.names)):
+        for group in range(len(self.names)):
             xmin = np.min(self.stream_dfs['%d' % group]['xmix'][self.stream_dfs['%d' % group]['group_pca_sig'] <= 2])
             xmax = np.max(self.stream_dfs['%d' % group]['xmix'][self.stream_dfs['%d' % group]['group_pca_sig'] <= 2])
 
