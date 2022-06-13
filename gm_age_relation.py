@@ -8,13 +8,13 @@ import matplotlib.pylab as plt
 import os
 plt.style.use('%s/mystyle.mplstyle' % os.environ['MPL_STYLES'])
 
+from multiprocessing import Pool
 import emcee
 from multiprocessing import Pool
 import random
 
 from sklearn.mixture import GaussianMixture
 
-from p_tqdm import p_map
 import time
 from galpy.actionAngle import actionAngleStaeckel
 from galpy.actionAngle import estimateDeltaStaeckel
@@ -1008,7 +1008,8 @@ class KM_metals(object):
         KM_metals['xmix'] = R_G * np.cos(phi)
 
         cs = 10000
-        r = p_map(partial(loop, KM_metals, cs), range(0, len(KM_metals), cs), num_cpus=4)
+        with Pool(processes=4) as pool:
+            r = pool.map(partial(loop, KM_metals, cs), range(0, len(KM_metals), cs))
         r1 = []
         r2 = []
         r3 = []
@@ -1226,14 +1227,14 @@ class KM_metals(object):
                       r' $[1 \sigma < (U,x_{mix}) \leq 2 \sigma]$',
                       r'Background']
             df_type = ['stream', 'stream', 'KM']
-            for ev_group, color, label in zip(ev_groups, colors, labels):
-                if df_type == 'stream':
+            for ev_group, color, label, dft in zip(ev_groups, colors, labels, df_type):
+                if dft == 'stream':
                     data = self.stream_dfs['%d' % group]
                 else:
                     data = self.KM_metals
-                xs = np.array(data['M_H'][ev_group] -
-                              (-0.03) * (data['xmix'][ev_group] - 8.1) - 0.188)
-                ys = np.array(data['gw'][ev_group])
+                xs = (np.array(data['M_H'])[ev_group] -
+                      (-0.03) * (np.array(data['xmix'])[ev_group] - 8.1) - 0.188)
+                ys = np.array(data['gw'])[ev_group]
                 sampler, flat_samples = mcmc_GM_fit(xs, ys, gms, ts)
 
                 mcmc = np.percentile(flat_samples, [16, 50, 84], axis=0)
@@ -1254,18 +1255,18 @@ class KM_metals(object):
                 # determine the Rbirth distribution
                 mh_bins = np.arange(-1.5, 0.6, 0.1)
                 mh_mids = np.array([(mh_bins[i] + mh_bins[i + 1]) / 2 for i in range(len(mh_bins) - 1)])
-                mh_stream1, mh_err_stream1 = bootstrap_hist(np.array(data['M_H'][ev_group]),
+                mh_stream1, mh_err_stream1 = bootstrap_hist(np.array(data['M_H'])[ev_group],
                                                             mh_bins, 1000)
 
                 LZ_bins = np.arange(850, 2600, 10)
                 LZ_mids = np.array([(LZ_bins[i] + LZ_bins[i + 1]) / 2 for i in range(len(LZ_bins) - 1)])
-                LZ_stream1, LZ_err_stream1 = bootstrap_hist(220 * 8 * np.array(data['L_Z'][ev_group]),
+                LZ_stream1, LZ_err_stream1 = bootstrap_hist(220 * 8 * np.array(data['L_Z'])[ev_group],
                                                             LZ_bins, 1000)
 
                 Rb_stream1, RBerr_stream1 = bootstrap_Rbirth_LZ(mh_stream1, mh_err_stream1, mh_bins, mcmc[1,:], q[1,:],
                                                                 ts, LZ_stream1, LZ_err_stream1, LZ_bins,
                                                                 Rb_bins,
-                                                                len(self.stream_dfs['%d' % group]['L_Z'][ev_group]), 1000)
+                                                                len(np.array(data['L_Z'])[ev_group]), 1000)
 
                 # plot the results
                 ax1.scatter(t_mids, mcmc[1,:], c=color, label=self.names[group] + label)
