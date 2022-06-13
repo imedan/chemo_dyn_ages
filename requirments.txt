@@ -7,7 +7,6 @@ emcee
 multiprocessing
 random
 sklearn
-p_tqdm
 galpy
 scipy
 functools
