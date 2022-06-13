@@ -463,9 +463,9 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     apogee = apogee.drop_duplicates(subset='GAIA_SOURCE_ID',
                                     keep='first', ignore_index=True)
     apogee = apogee[abs(apogee['M_H'])<1000.].reset_index()
-    apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "ID"})
+    apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "d2_ID"})
     apogee = apogee.rename(columns={"M_H": "M_H_spec"})
-    apogee = apogee.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
+    apogee = apogee.merge(KM_metals[['M_H', 'd2_ID']], on='d2_ID', how='inner')
 
     hdu=fits.open(apogee_14_file)
 
@@ -474,8 +474,8 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
                                     keep='first', ignore_index=True)
     apdr14 = apdr14[abs(apdr14['M_H'])<1000.].reset_index()
     apdr14 = apdr14.rename(columns={"M_H": "M_H_spec"})
-    apdr14 = apdr14.merge(apogee[['ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
-    apdr14 = apdr14.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
+    apdr14 = apdr14.merge(apogee[['d2_ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
+    apdr14 = apdr14.merge(KM_metals[['M_H', 'd2_ID']], on='d2_ID', how='inner')
 
     f, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(20, 30))
 
@@ -940,9 +940,9 @@ class KM_metals(object):
         df1 = pd.read_csv(self.metals_file, delim_whitespace=True)
 
         gaia1 = pd.read_csv(self.gaia_file,
-                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15],
+                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 19],
                             names=['RA', 'DEC', 'ID', 'plx', 'pmra',
-                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err'],
+                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err', 'd2_ID'],
                             skiprows=1)
         
         # grab the Gaia data
