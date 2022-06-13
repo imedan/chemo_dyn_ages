@@ -1206,7 +1206,7 @@ class KM_metals(object):
         self.all_age_dists = {}
         self.all_age_dists_errs = {}
 
-        for i in range(len(ts)):
+        for i in range(len(ts) - 1):
             self.KM_metals['age_%d' % i] = 0
 
         for group in range(len(self.names)):
@@ -1247,7 +1247,7 @@ class KM_metals(object):
                 self.all_age_dists_errs[group].append(q[1,:])
 
                 ev_sig = self.KM_metals['ID'].isin(data['ID'][ev_group])
-                for i in range(len(ts)):
+                for i in range(len(ts) - 1):
                     self.KM_metals.loc[ev_sig, 'age_%d' % i] += mcmc[1, i]
 
                 # determine the Rbirth distribution
