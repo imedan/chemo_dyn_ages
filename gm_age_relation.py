@@ -1085,6 +1085,9 @@ class KM_metals(object):
         self.std2 = []
         self.angles = []
 
+        # file to write table data
+        f = open('summary_table_data.txt', 'w')
+
         for i in range(len(self.names)):
             group = i
             ev_group = self.KM_metals['group'] == group
@@ -1139,10 +1142,21 @@ class KM_metals(object):
 
             comps = []
             As = []
+            line = [names[i]]
             for length, vector in zip(pca.explained_variance_, pca.components_):
                 v = vector * 3 * np.sqrt(length)
                 comps.append(np.sqrt(v[0] ** 2 + v[1] ** 2))
                 As.append(np.arctan(v[1] / v[0]) * (180 / np.pi))
+            # write the line for the table
+            line.append(pca.inverse_transform([mean1,mean2])[0])
+            line.append(pca.inverse_transform([mean1,mean2])[1])
+            line.append(comps[0])
+            line.append(comps[1])
+            line.append(As[0]*-1)
+            line.append(len(stream_dfs['%d' % i][stream_dfs['%d' % i]['group_pca_sig']==1.]))
+            line.append(len(stream_dfs['%d' % i][stream_dfs['%d' % i]['group_pca_sig']==2.]))
+            line.append(len(stream_dfs['%d' % i][stream_dfs['%d' % i]['group_pca_sig']==3.]))
+            f.write('%s & %.3f & %.3f & %.3f & %.3f & %.3f & %d & %d & %d \n' % line)
             self.mean1.append(pca.inverse_transform([mean1, mean2])[0])
             self.mean2.append(pca.inverse_transform([mean1, mean2])[1])
             self.std1.append(comps[0])
