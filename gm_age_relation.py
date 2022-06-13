@@ -789,11 +789,14 @@ def action_angle(ra, dec, distance, pm_ra, pm_dec, v_hel):
     """
     approximate actions
     """
-    o = Orbit(vxvv=[ra, dec, distance, pm_ra, pm_dec, v_hel],radec=True)
+    inps = []
+    for i in range(len(ra)):
+        inps.append([ra[i], dec[i], distance[i], pm_ra[i], pm_dec[i], v_hel[i]])
+    o = Orbit(vxvv=inps, radec=True)
     delta = 0.45
     aAS = actionAngleStaeckel(pot=MWPotential2014, delta=delta, c=True)
     actions = aAS(o.R() / 8., o.vR() / 220., o.vT() / 220., o.z() / 8., o.vz() / 220., fixed_quad=True)
-    return actions[0][0], actions[1][0], actions[2][0]
+    return actions[0], actions[1], actions[2]
 
 
 def bootstrap_hist(x, bins, N):
@@ -899,16 +902,19 @@ def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
     return np.mean(ns, axis=0), np.std(ns, axis=0)
 
 
-def loop(KM_metals, i):
+def loop(KM_metals, cs, i):
     """
     multiprocessing loops for calculating actions
     """
-    ra = KM_metals.loc[i,'RA'] # [deg]
-    dec = KM_metals.loc[i,'DEC'] # [deg]
-    distance = 1/KM_metals.loc[i,'plx'] #kpc
-    pm_ra = KM_metals.loc[i,'pmra'] # [mas/yr]
-    pm_dec = KM_metals.loc[i,'pmde'] # [mas/yr]
-    v_hel = KM_metals.loc[i,'rv'] # [km /s]
+    maxx = i + cs - 1
+    if maxx > len(KM_metals) - 1:
+        maxx = len(KM_metals) - 1
+    ra = np.array(KM_metals.loc[i: maxx,'RA']) # [deg]
+    dec = np.array(KM_metals.loc[i: maxx,'DEC']) # [deg]
+    distance = np.array(1/KM_metals.loc[i: maxx,'plx']) #kpc
+    pm_ra = np.array(KM_metals.loc[i: maxx,'pmra']) # [mas/yr]
+    pm_dec = np.array(KM_metals.loc[i: maxx,'pmde']) # [mas/yr]
+    v_hel = np.array(KM_metals.loc[i: maxx,'rv']) # [km /s]
     JR,LZ,JZ = action_angle(ra, dec, distance, pm_ra, pm_dec, v_hel)
     return [JR, LZ, JZ]
 
@@ -950,7 +956,8 @@ class KM_metals(object):
 
         gaia_dr2 = pd.read_csv(self.gaia_dr2_match_file,
                                names=['ID', 'dr2_ID', 'ang_dist'],
-                               skiprows=1)
+                               skiprows=1,
+                               dtype={'ID': 'Int64', 'dr2_ID': 'Int64', 'ang_dist': 'float64'})
         gaia_dr2 = gaia_dr2.sort_values(by=['ID', 'ang_dist'])
         gaia_dr2 = gaia_dr2.drop_duplicates(subset='ID', keep='first')
         gaia1 = gaia1.merge(gaia_dr2, on='ID', how='left')
@@ -998,9 +1005,17 @@ class KM_metals(object):
         phi = np.arcsin(KM_metals['dist'] * 1e-3 * np.sin(np.radians(l)) / KM_metals['R'])
         KM_metals['xmix'] = R_G * np.cos(phi)
 
-        r = p_map(partial(loop, KM_metals), KM_metals.index.to_list(), num_cpus=4)
+        cs = 10000
+        r = p_map(partial(loop, KM_metals, cs), range(0, len(KM_metals), cs), num_cpus=4)
+        r1 = []
+        r2 = []
+        r3 = []
+        for ri in r:
+            r1 += list(ri[0])
+            r2 += list(ri[1])
+            r3 += list(ri[2])
 
-        r = np.array(r)
+        r = np.column_stack((r1, r2, r3))
         KM_metals['J_R'] = r[:,0]
         KM_metals['L_Z'] = r[:,1]
         KM_metals['J_Z'] = r[:,2]
