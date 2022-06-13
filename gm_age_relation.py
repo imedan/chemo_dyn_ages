@@ -33,6 +33,8 @@ from functools import partial
 
 from tqdm import trange
 
+import pickle
+
 
 def uvw(ra, de, pmra, pmde, dist, rv):
     """
@@ -1277,3 +1279,8 @@ class KM_metals(object):
             plt.savefig('%s/%s_age_fit_sigma_regions_same_scale.png' % (plot_dir, self.names[group].replace(' ', '_')),
                         bbox_inches='tight', dpi=100)
             plt.show()
+        # save the results
+        with open('GM_all_age_dists.pickle', 'wb') as handle:
+            pickle.dump(self.all_age_dists, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open('GM_all_age_dists_err.pickle', 'wb') as handle:
+            pickle.dump(self.all_age_dists_errs, handle, protocol=pickle.HIGHEST_PROTOCOL)
