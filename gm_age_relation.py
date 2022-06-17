@@ -31,7 +31,7 @@ from sklearn.decomposition import PCA
 from sklearn import preprocessing
 from functools import partial
 
-from tqdm import trange
+from tqdm.notebook import trange
 
 import pickle
 
@@ -264,7 +264,7 @@ def log_probability(theta, x, y, yerr, ts):
     return lp + log_likelihood(theta, x, y, yerr, ts)
 
 
-def mcmc_GM_fit(MH_norm, W, gms, ts):
+def mcmc_GM_fit(MH_norm, W, gms, ts, progress=True):
     """
     find the probably age distirbution based on GMM fit
     from GALAH and W, [M/H] of data
@@ -282,6 +282,9 @@ def mcmc_GM_fit(MH_norm, W, gms, ts):
 
     ts: np.array
         bin edges for the age bins
+
+    progress: boolean
+        Display progress of MCMC
 
     Returns
     -------
@@ -327,7 +330,7 @@ def mcmc_GM_fit(MH_norm, W, gms, ts):
                                         args=([Xmid.ravel()[ev_y]] + y_comps,
                                               y[ev_y], yerr[ev_y], ts),
                                         pool=pool)
-        sampler.run_mcmc(pos, 10000, progress=True)
+        sampler.run_mcmc(pos, 10000, progress=progress)
 
     tau = sampler.get_autocorr_time(quiet=True)
     flat_samples = sampler.get_chain(discard=int(3 * max(tau)), thin=int(max(tau) / 2), flat=True)
