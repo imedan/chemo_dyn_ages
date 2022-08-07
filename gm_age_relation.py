@@ -817,25 +817,32 @@ def bootstrap_hist(x, bins, N):
     return np.mean(ns,axis=0), np.std(ns,axis=0)
 
 
-def LZ0_FeH(t, FeH, LZ0prob):
+def LZ0_FeH(t, FeH):
     """
     get the intial LZ of a star based on age
     and metallicity
     """
     delta_inner = -0.03
     delta_FeH = -0.093
-    if LZ0prob / 235 < 3:
-        delta_FeH_LZ = delta_inner
-    else:
-        delta_FeH_LZ = delta_FeH
     ft = (1 - t / 12) ** 0.45
     Fe_H_max = 0.7
-    if LZ0prob / 235 < 3:
-        b_Fe_H = 0.
-        return (FeH  - Fe_H_max * ft - b_Fe_H) * (235. / delta_FeH_LZ)
-    else:
-        b_Fe_H = (delta_inner - delta_FeH) * 3 
-        return (FeH  - Fe_H_max * ft - b_Fe_H) * (235. / delta_FeH_LZ)
+    LZ0s = np.zeros(len(t))
+    LZ0s[FeH > Fe_H_max * ft + 3 * delta_inner] = (235 / delta_inner) * (FeH - Fe_H_max * ft)
+    LZ0s[~(FeH > Fe_H_max * ft + 3 * delta_inner)] = (235 / delta_FeH) * (FeH - Fe_H_max * ft - 3 * (delta_inner - delta_FeH))
+    return LZ0
+    ### this is the old version of the inversion thats wrong
+    # if LZ0prob / 235 < 3:
+    #     delta_FeH_LZ = delta_inner
+    # else:
+    #     delta_FeH_LZ = delta_FeH
+    # ft = (1 - t / 12) ** 0.45
+    # Fe_H_max = 0.7
+    # if LZ0prob / 235 < 3:
+    #     b_Fe_H = 0.
+    #     return (FeH  - Fe_H_max * ft - b_Fe_H) * (235. / delta_FeH_LZ)
+    # else:
+    #     b_Fe_H = (delta_inner - delta_FeH) * 3 
+    #     return (FeH  - Fe_H_max * ft - b_Fe_H) * (235. / delta_FeH_LZ)
     
 def FeH_from_LZ0(t, LZ0):
     """
@@ -896,10 +903,7 @@ def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
         LZ_samp = np.random.choice(LZbins_mid, size=N_samp,
                                    p=LZ_rand / np.sum(LZ_rand))
 
-        LZ0_samp = np.zeros(N_samp)
-        for j in range(N_samp):
-            probs = prob_LZ0(age_samp[j], LZ_samp[j], LZ0s)
-            LZ0_samp[j] = LZ0_FeH(age_samp[j], mh_samp[j], LZ0s[np.argmax(probs)])
+        LZ0_samp = LZ0_FeH(age_samp, mh_samp)
 
         R_birth = LZ0_samp / 235
 
