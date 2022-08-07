@@ -829,7 +829,7 @@ def LZ0_FeH(t, FeH):
     LZ0s = np.zeros(len(t))
     LZ0s[FeH > Fe_H_max * ft + 3 * delta_inner] = (235 / delta_inner) * (FeH - Fe_H_max * ft)
     LZ0s[~(FeH > Fe_H_max * ft + 3 * delta_inner)] = (235 / delta_FeH) * (FeH - Fe_H_max * ft - 3 * (delta_inner - delta_FeH))
-    return LZ0
+    return LZ0s
     ### this is the old version of the inversion thats wrong
     # if LZ0prob / 235 < 3:
     #     delta_FeH_LZ = delta_inner
