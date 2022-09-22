@@ -951,9 +951,9 @@ class KM_metals(object):
         self.polygons = self.init_polygons()
 
         # set names of kinematic groups
-        self.names = ['Sirius', 'Coma', 'Horn?', 'Hyades',
-                      'Pleiades', 'Herc 1', 'Herc 2', 'Herc 3',
-                      '??? (Herc 1)', '??? (Herc 2)']
+        self.names = ['A1/A2', r'$\gamma$Leo', 'Sirius','Coma Berenices','Dehnen98/Wolf630','Hyades','Pleiades',
+                      'Hercules 1', 'Hercules 2', 'Hercules 3 (HR1614)', 
+                      'g24 (Herc. 1)', 'g28 (Herc. 2)']
 
     def load_KM_data(self):
         df1 = pd.read_csv(self.metals_file, delim_whitespace=True)
@@ -1039,14 +1039,24 @@ class KM_metals(object):
         define kinematic groups
         """
         polygons = []
+        # A1/A2
+        ellipse = Polygon(xy=np.column_stack(([-23.2, -60, -60, 30, 15, -3],
+                                              [8.5, 8.75, 9.25, 9.25, 8.7, 8.7])),
+                          edgecolor='r', fc='None', lw=2)
+        polygons.append(ellipse)
+        # gamma Leo
+        ellipse = Polygon(xy=np.column_stack(([15, 60, 60, 46.5],
+                                              [8.7, 8.7, 8.2, 7.9])),
+                          edgecolor='r', fc='None', lw=2)
+        polygons.append(ellipse)
         #sirius stream
         ellipse = Polygon(xy=np.column_stack(([-3, 15, 46.5, 32.5, -23.2],
-                                              [8.6, 8.6, 7.9, 7.6, 8.4])),
+                                              [8.7, 8.7, 7.9, 7.6, 8.5])),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #coma stream
         ellipse = Polygon(xy=np.column_stack(([-23.2, 32.5, 27.5, 24.5, -34.3],
-                                              [8.4, 7.6, 7.2, 7.1, 8])),
+                                              [8.5, 7.6, 7.2, 7.1, 8])),
                                 edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #horn???
