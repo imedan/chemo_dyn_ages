@@ -35,6 +35,8 @@ from tqdm.notebook import trange
 
 import pickle
 
+from scipy.spatial import cKDTree
+
 
 def uvw(ra, de, pmra, pmde, dist, rv):
     """
@@ -815,6 +817,35 @@ def bootstrap_hist(x, bins, N):
         n, bins = np.histogram(x[idx], bins=bins, density=True)
         ns[i,:] = n
     return np.mean(ns,axis=0), np.std(ns,axis=0)
+
+
+def assign_equal_number_grid(x, y):
+    """
+    assign the equal number griding
+    """
+    # only select ones on grid?
+    ev = (x > -100) & (x < 100) & (y > 5) & (y < 10)
+    x = x[ev]
+    y = y[ev]
+
+    xnorm = (x - x.min()) / (x.max() - x.min())
+    ynorm = (y - y.min()) / (y.max() - y.min())
+    tree = cKDTree(np.column_stack((xnorm, ynorm))) # let points be an array of shape (n,2)
+    groups = []
+    depth = 7 # depth of the tree, ie: depth=5 results in 64 bins
+    def recurse(node, i=0):
+        g = node.greater
+        l = node.lesser
+        if(i == depth):
+            groups.append(g.data_points)
+            groups.append(l.data_points)
+            return
+        recurse(g, i=i+1)
+        recurse(l, i=i+1)
+
+    recurse(tree.tree)
+
+    return groups
 
 
 def LZ0_FeH(t, FeH):
