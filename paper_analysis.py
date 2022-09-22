@@ -26,6 +26,19 @@ def line(x, A, B):
     return A * x + B
 
 
+def bootstrap_mean(x ,N):
+    """
+    bootstrap the median of sample x over N iterations
+    """
+    if len(x) > 5:
+        means = np.zeros(N)
+        for i in range(N):
+            means[i] = np.nanmean(x[np.random.randint(len(x), size=len(x))])
+        return np.mean(means), np.std(means)
+    else:
+        return np.nan, np.nan
+
+
 if __name__ == '__main__':
     # initialze the GALAH training
     # need to download galah dr3 files (GALAH_DR3_main_allstar_v2.fits,
@@ -185,3 +198,17 @@ if __name__ == '__main__':
         Aerr[i] = np.sqrt(np.diag(pcov))[0]
         B[i] = popt[1]
         Berr[i] = np.sqrt(np.diag(pcov))[1]
+
+    # get the average params with age
+    A_means = np.zeros(len(age_frac[0, :]))
+    A_stds = np.zeros(len(age_frac[0, :]))
+    for i in range(len(age_frac[0, :])):
+        A_means[i], A_stds[i] = bootstrap_mean(abs(A[age_frac[:, i] > 0.5]),
+                                               1000)
+
+    B_means = np.zeros(len(age_frac[0, :]))
+    B_stds = np.zeros(len(age_frac[0, :]))
+    for i in range(len(age_frac[0, :])):
+        B_means[i], B_stds[i] = bootstrap_mean(abs(B[age_frac[:, i] > 0.5]),
+                                               1000)
+    
