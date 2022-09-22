@@ -910,14 +910,13 @@ def prob_LZ0(t, LZ, LZ0s):
     return intg
 
 def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
-                        LZ, LZerr, LZbins, R_birth_bins, N_samp, N):
+                        R_birth_bins, N_samp, N):
     """
     bootstrap the probably birth radius distribution of a group of stars
     based on metallicity, age and current LZ distributions
     """
     mhbins_mid = np.array([(mhbins[i] + mhbins[i + 1]) / 2 for i in range(len(mhbins) - 1)])
     age_bins_mid = np.array([(age_bins[i] + age_bins[i + 1]) / 2 for i in range(len(age_bins) - 1)])
-    LZbins_mid = np.array([(LZbins[i] + LZbins[i + 1]) / 2 for i in range(len(LZbins) - 1)])
 
     ns = np.zeros((N, len(R_birth_bins) - 1))
     LZ0s = np.linspace(0, 3000, 20)
@@ -930,10 +929,6 @@ def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
         age_rand[age_rand < 0] = 0
         age_samp = np.random.choice(age_bins_mid, size=N_samp,
                                     p=age_rand / np.sum(age_rand))
-        LZ_rand = LZ + np.random.randn(len(LZ)) * LZerr
-        LZ_rand[LZ_rand < 0] = 0
-        LZ_samp = np.random.choice(LZbins_mid, size=N_samp,
-                                   p=LZ_rand / np.sum(LZ_rand))
 
         LZ0_samp = LZ0_FeH(age_samp, mh_samp)
 
