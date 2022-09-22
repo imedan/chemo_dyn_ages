@@ -108,9 +108,9 @@ if __name__ == '__main__':
         xmax = max(group[:, 0] * (x.max() - x.min()) + x.min())
         ymin = min(group[:, 1] * (y.max() - y.min()) + y.min())
         ymax = max(group[:, 1] * (y.max() - y.min()) + y.min())
-        
+
         bounds[i, :] = np.array([xmin, xmax, ymin, ymax])
-        
+
         ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
                     (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax))
         xs = (np.array(KM.KM_metals['M_H'])[ev_group] -
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
         mcmc = np.percentile(flat_samples, [16, 50, 84], axis=0)
         q = np.diff(mcmc, axis=0)
-        
+
         age_frac[i, :] = mcmc[1, :]
         age_err[i, :] = q[1, :]
 
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     np.save('age_grid_kde/age_err.npy', age_err)
 
     # calculate the birth radii distributions
-    Rb_bins = np.arange(0, 22, 2)  
+    Rb_bins = np.arange(0, 22, 2)
     Rb_bins_mid = np.array([(Rb_bins[i] + Rb_bins[i + 1]) / 2 for i in range(len(Rb_bins) - 1)])
 
     Rb_frac = np.zeros((len(bounds), len(Rb_bins_mid)))
@@ -141,10 +141,10 @@ if __name__ == '__main__':
         xmax = bounds[i][1]
         ymin = bounds[i][2]
         ymax = bounds[i][3]
-        
+
         ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
                     (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax))
-        
+
         mh_bins = np.arange(-1.5, 0.6, 0.1)
         mh_mids = np.array([(mh_bins[i] + mh_bins[i + 1]) / 2 for i in range(len(mh_bins) - 1)])
         mh_stream1, mh_err_stream1 = bootstrap_hist(np.array(KM.KM_metals['M_H'])[ev_group],
@@ -179,7 +179,7 @@ if __name__ == '__main__':
         xmax = bounds[i][1]
         ymin = bounds[i][2]
         ymax = bounds[i][3]
-        
+
         ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
                     (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax) &
                     (l > 50) & (l < 200))
@@ -190,7 +190,7 @@ if __name__ == '__main__':
             ev_z = (KM.KM_metals['gz'] > zs[j]) & (KM.KM_metals['gz'] <= zs[j + 1])
             w_means[j], w_stds[j] = bootstrap_median(
                 np.array(KM.KM_metals['gw'][ev_z & ev_group] + 7.25), 1000)
-        
+
         popt, pcov = curve_fit(line, z_mids[~np.isnan(w_means)] / 1000,
                                w_means[~np.isnan(w_means)], p0=(2, -1),
                                sigma=w_stds[~np.isnan(w_means)], absolute_sigma=True)
@@ -211,4 +211,3 @@ if __name__ == '__main__':
     for i in range(len(age_frac[0, :])):
         B_means[i], B_stds[i] = bootstrap_mean(abs(B[age_frac[:, i] > 0.5]),
                                                1000)
-    
