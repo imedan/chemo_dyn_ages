@@ -7,6 +7,7 @@ from gm_age_relation import (GM_Age_GALAH, KM_metals,
 from scipy.optimize import curve_fit
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from tqdm import tqdm
 
 
 def bootstrap_median(x ,N):
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     # need to download galah dr3 files (GALAH_DR3_main_allstar_v2.fits,
     # GALAH_DR3_VAC_ages_v2.fits and GALAH_DR3_VAC_GaiaEDR3_v2.fits)
     # from here: https://cloud.datacentral.org.au/teamdata/GALAH/public/GALAH_DR3/
-    GM = GM_Age_GALAH('galah_data/')
+    GM = GM_Age_GALAH('../gaia_RV_cross_match/galah_data/')
 
     # get the GM models from GALAH
     GM.find_GMMs(np.arange(0, 16, 2), plot_dir='paper_plots')
@@ -74,15 +75,15 @@ if __name__ == '__main__':
     # WHERE g3.phot_g_mean_mag <= 14 AND g3.phot_rp_mean_mag <= 14 AND g3.phot_bp_mean_mag -
     #       g3.phot_rp_mean_mag > 0.98 AND g3.phot_bp_mean_mag - g3.phot_rp_mean_mag < 2.39 AND
     #       g3.parallax > 0 AND g3.phot_g_mean_mag + 5 * log10(0.001 * g3.parallax) + 5 > 4
-    KM = KM_metals(metals_file='gaia_DR3_photo_metallicities.txt',
-                   gaia_file='gaia_file/K_dwarf_RV_DR3-result.csv',
-                   gaia_dr2_match_file='gaia_file/K_dwarf_RV_DR3_w_DR2_match-result.csv')
+    KM = KM_metals(metals_file='../gaia_RV_cross_match/gaia_DR3_photo_metallicities.txt',
+                   gaia_file='../gaia_RV_cross_match/gaia_file/K_dwarf_RV_DR3-result.csv',
+                   gaia_dr2_match_file='../gaia_RV_cross_match/gaia_file/K_dwarf_RV_DR3_w_DR2_match-result.csv')
 
     # comapre photo metallicities to those in spectroscopic surveys
     # download galah dr3 from: https://cloud.datacentral.org.au/teamdata/GALAH/public/GALAH_DR3/
     # download apogee dr16 from: https://dr16.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStarLite-r12-l33.fits
     # download apogee dr14 data from: https://data.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStar-r12-l33.fits
-    galah_file = 'galah_data/GALAH_DR3_main_allstar_v2.fits'
+    galah_file = '../gaia_RV_cross_match/galah_data/GALAH_DR3_main_allstar_v2.fits'
     apogee_16_file = '../500_pc_KM_rv_cross_match/APOGEE_DR16_allStarLite-r12-l33.fits'
     apogee_14_file = '../500_pc_KM_rv_cross_match/APOGEE_DR14_allStar-l31c.2.fits'
     compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
@@ -103,7 +104,7 @@ if __name__ == '__main__':
     age_frac = np.zeros((len(groups), len(ts) - 1))
     age_err = np.zeros((len(groups), len(ts) - 1))
 
-    for i, group in enumerate(groups):
+    for i, group in tqdm(enumerate(groups)):
         xmin = min(group[:, 0] * (x.max() - x.min()) + x.min())
         xmax = max(group[:, 0] * (x.max() - x.min()) + x.min())
         ymin = min(group[:, 1] * (y.max() - y.min()) + y.min())
@@ -136,7 +137,7 @@ if __name__ == '__main__':
     Rb_frac = np.zeros((len(bounds), len(Rb_bins_mid)))
     Rb_err = np.zeros((len(bounds), len(Rb_bins_mid)))
 
-    for i in range(len(bounds)):
+    for i in tqdm(range(len(bounds))):
         xmin = bounds[i][0]
         xmax = bounds[i][1]
         ymin = bounds[i][2]
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     zs = np.linspace(-500, 500, 34)
     z_mids = np.array([(zs[i] + zs[i+1]) / 2 for i in range(len(zs) - 1)])
 
-    for i in range(len(bounds)):
+    for i in tqdm(range(len(bounds))):
         xmin = bounds[i][0]
         xmax = bounds[i][1]
         ymin = bounds[i][2]
