@@ -495,7 +495,7 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     compare_metals(galah['fe_h'], galah['e_fe_h'],
                    galah['M_H'], ax5, ax6, '[Fe/H]_{GALAH_{DR3}}')
     plt.savefig(plot_save, dpi=100, bbox_inches='tight')
-    plt.show()
+    plt.close('all')
 
 
 class GM_Age_GALAH(object):
@@ -672,7 +672,7 @@ class GM_Age_GALAH(object):
                 
                 plt.savefig('%s/GM_%2d_t_%2d.png' % (plot_dir, ages[i], ages[i + 1]),
                             dpi=100, bbox_inches='tight')
-                plt.show()
+                plt.close('all')
         self.gms = gms
         self.ts = ages
 
@@ -768,7 +768,7 @@ class GM_Age_GALAH(object):
                 ax.legend()
             plt.savefig('%s/GM_%d_peak_test_%d.png' % (plot_dir, npeaks, nadds),
                         dpi=100, bbox_inches='tight')
-            plt.show()
+            plt.close('all')
 
             if plot_mcmc_prog:
                 fig, axes = plt.subplots(len(mcmc[1,:]), figsize=(10, 18*len(mcmc[1,:])/6), sharex=True)
@@ -788,7 +788,7 @@ class GM_Age_GALAH(object):
 
                 axes[-1].set_xlabel("step number")
 
-                plt.show()
+                plt.close('all')
         return sig_all_2
 
 
@@ -1209,7 +1209,7 @@ class KM_metals(object):
                 ax2.set_xlim((-100, 100))
                 ax2.set_ylim((5, 10))
                 plt.title(self.names[i])
-                plt.show()
+                plt.close('all')
             self.id2 += list(self.stream_dfs['%d' % i]['ID'][self.stream_dfs['%d' % i]['group_pca_sig'] <= 2])
 
             comps = []
