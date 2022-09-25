@@ -95,6 +95,9 @@ if __name__ == '__main__':
     # get the gridding in x_mix vs U
     x = np.array(KM.KM_metals['gu'])
     y = np.array(KM.KM_metals['xmix'])
+    ev = (x > -100) & (x < 100) & (y > 5) & (y < 10)
+    x = x[ev]
+    y = y[ev]
     groups = assign_equal_number_grid(x, y)
 
     # calculate the age distribution on the grid

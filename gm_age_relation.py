@@ -823,11 +823,6 @@ def assign_equal_number_grid(x, y):
     """
     assign the equal number griding
     """
-    # only select ones on grid?
-    ev = (x > -100) & (x < 100) & (y > 5) & (y < 10)
-    x = x[ev]
-    y = y[ev]
-
     xnorm = (x - x.min()) / (x.max() - x.min())
     ynorm = (y - y.min()) / (y.max() - y.min())
     tree = cKDTree(np.column_stack((xnorm, ynorm))) # let points be an array of shape (n,2)
