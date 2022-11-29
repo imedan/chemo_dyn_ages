@@ -51,10 +51,10 @@ if __name__ == '__main__':
     GM.find_GMMs(np.arange(0, 16, 2), plot_dir='paper_plots')
 
     # do the 2 peak tests
-    sig_2 = GM.test_GMM_fit(6, 'paper_plots', npeaks=2, plot_mcmc_prog=False)
+    # sig_2 = GM.test_GMM_fit(6, 'paper_plots', npeaks=2, plot_mcmc_prog=False)
 
     # do the 1 peak tests
-    sig_1 = GM.test_GMM_fit(8, 'paper_plots', npeaks=1, plot_mcmc_prog=False)
+    # sig_1 = GM.test_GMM_fit(8, 'paper_plots', npeaks=1, plot_mcmc_prog=False)
 
     # initialize the class with the K/M dwarfs
 
@@ -83,11 +83,11 @@ if __name__ == '__main__':
     # download galah dr3 from: https://cloud.datacentral.org.au/teamdata/GALAH/public/GALAH_DR3/
     # download apogee dr16 from: https://dr16.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStarLite-r12-l33.fits
     # download apogee dr14 data from: https://data.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStar-r12-l33.fits
-    galah_file = '../gaia_RV_cross_match/galah_data/GALAH_DR3_main_allstar_v2.fits'
-    apogee_16_file = '../500_pc_KM_rv_cross_match/APOGEE_DR16_allStarLite-r12-l33.fits'
-    apogee_14_file = '../500_pc_KM_rv_cross_match/APOGEE_DR14_allStar-l31c.2.fits'
-    compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
-                             KM.KM_metals, 'paper_plots/compare_all_spec_metals.png')
+    # galah_file = '../gaia_RV_cross_match/galah_data/GALAH_DR3_main_allstar_v2.fits'
+    # apogee_16_file = '../500_pc_KM_rv_cross_match/APOGEE_DR16_allStarLite-r12-l33.fits'
+    # apogee_14_file = '../500_pc_KM_rv_cross_match/APOGEE_DR14_allStar-l31c.2.fits'
+    # compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
+    #                          KM.KM_metals, 'paper_plots/compare_all_spec_metals.png')
 
     # assign the kinemtic groups
     KM.assign_kinematic_groups(plot_groups=False)
@@ -128,10 +128,13 @@ if __name__ == '__main__':
         age_frac[i, :] = mcmc[1, :]
         age_err[i, :] = q[1, :]
 
+        if i >= 4:
+            break
+
     # save the results
-    np.save('age_grid_kde/bounds.npy', bounds)
-    np.save('age_grid_kde/age_frac.npy', age_frac)
-    np.save('age_grid_kde/age_err.npy', age_err)
+    np.save('age_grid_kde_test/bounds.npy', bounds)
+    np.save('age_grid_kde_test/age_frac.npy', age_frac)
+    np.save('age_grid_kde_test/age_err.npy', age_err)
 
     # calculate the birth radii distributions
     Rb_bins = np.arange(0, 22, 2)
@@ -158,10 +161,12 @@ if __name__ == '__main__':
                                                           age_frac[i, :], age_err[i, :],
                                                           ts, Rb_bins,
                                                           len(np.array(KM.KM_metals['L_Z'])[ev_group]), 1000)
+        if i >= 4:
+            break
 
     # save the results
-    np.save('age_grid_kde/Rb_frac.npy', Rb_frac)
-    np.save('age_grid_kde/Rb_err.npy', Rb_err)
+    np.save('age_grid_kde_test/Rb_frac.npy', Rb_frac)
+    np.save('age_grid_kde_test/Rb_err.npy', Rb_err)
 
     # calculate the bending and breathing params
     sc = SkyCoord(ra=np.array(KM.KM_metals['RA']) * u.deg,
@@ -202,6 +207,9 @@ if __name__ == '__main__':
         Aerr[i] = np.sqrt(np.diag(pcov))[0]
         B[i] = popt[1]
         Berr[i] = np.sqrt(np.diag(pcov))[1]
+
+        if i >= 4:
+            break
 
     # get the average params with age
     A_means = np.zeros(len(age_frac[0, :]))
