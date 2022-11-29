@@ -51,10 +51,10 @@ if __name__ == '__main__':
     GM.find_GMMs(np.arange(0, 16, 2), plot_dir='paper_plots')
 
     # do the 2 peak tests
-    # sig_2 = GM.test_GMM_fit(6, 'paper_plots', npeaks=2, plot_mcmc_prog=False)
+    sig_2 = GM.test_GMM_fit(6, 'paper_plots', npeaks=2, plot_mcmc_prog=False)
 
     # do the 1 peak tests
-    # sig_1 = GM.test_GMM_fit(8, 'paper_plots', npeaks=1, plot_mcmc_prog=False)
+    sig_1 = GM.test_GMM_fit(8, 'paper_plots', npeaks=1, plot_mcmc_prog=False)
 
     # initialize the class with the K/M dwarfs
 
@@ -83,11 +83,11 @@ if __name__ == '__main__':
     # download galah dr3 from: https://cloud.datacentral.org.au/teamdata/GALAH/public/GALAH_DR3/
     # download apogee dr16 from: https://dr16.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStarLite-r12-l33.fits
     # download apogee dr14 data from: https://data.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStar-r12-l33.fits
-    # galah_file = '../gaia_RV_cross_match/galah_data/GALAH_DR3_main_allstar_v2.fits'
-    # apogee_16_file = '../500_pc_KM_rv_cross_match/APOGEE_DR16_allStarLite-r12-l33.fits'
-    # apogee_14_file = '../500_pc_KM_rv_cross_match/APOGEE_DR14_allStar-l31c.2.fits'
-    # compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
-    #                          KM.KM_metals, 'paper_plots/compare_all_spec_metals.png')
+    galah_file = '../gaia_RV_cross_match/galah_data/GALAH_DR3_main_allstar_v2.fits'
+    apogee_16_file = '../500_pc_KM_rv_cross_match/APOGEE_DR16_allStarLite-r12-l33.fits'
+    apogee_14_file = '../500_pc_KM_rv_cross_match/APOGEE_DR14_allStar-l31c.2.fits'
+    compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
+                             KM.KM_metals, 'paper_plots/compare_all_spec_metals.png')
 
     # assign the kinemtic groups
     KM.assign_kinematic_groups(plot_groups=False)
