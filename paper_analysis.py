@@ -81,13 +81,27 @@ if __name__ == '__main__':
 
     # comapre photo metallicities to those in spectroscopic surveys
     # download galah dr3 from: https://cloud.datacentral.org.au/teamdata/GALAH/public/GALAH_DR3/
-    # download apogee dr16 from: https://dr16.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStarLite-r12-l33.fits
+    # download apogee dr17 from: https://data.sdss.org/sas/dr17/apogee/spectro/aspcap/dr17/synspec_rev1/allStarLite-dr17-synspec_rev1.fits
     # download apogee dr14 data from: https://data.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStar-r12-l33.fits
+    # file with gaia RVS and BP/RP spectra metallicities can be quieried from the gaia archive by:
+    # SELECT g3.source_id, g3spec.mh_gspphot, g3spec.mh_gspphot_lower, g3spec.mh_gspphot_upper, g3spec.ag_gspphot, g3spec.ag_gspphot_lower, g3spec.ag_gspphot_upper, g3spec.mh_gspspec, g3spec.mh_gspspec_lower, g3spec.mh_gspspec_upper
+    # FROM gaiadr3.gaia_source as g3
+    # JOIN gaiadr3.astrophysical_parameters as g3spec on g3.source_id = g3spec.source_id
+    # WHERE g3.phot_g_mean_mag <= 14 AND 
+    # g3.phot_rp_mean_mag <= 14 AND
+    # g3.phot_bp_mean_mag - 
+    # g3.phot_rp_mean_mag > 0.98 AND 
+    # g3.phot_bp_mean_mag - 
+    # g3.phot_rp_mean_mag < 2.39 AND 
+    # g3.parallax > 0 AND 
+    # g3.phot_g_mean_mag + 
+    # 5 * log10(0.001 * g3.parallax) + 5 > 4
     galah_file = '../gaia_RV_cross_match/galah_data/GALAH_DR3_main_allstar_v2.fits'
-    apogee_16_file = '../500_pc_KM_rv_cross_match/APOGEE_DR16_allStarLite-r12-l33.fits'
+    apogee_17_file = '../500_pc_KM_rv_cross_match/allStarLite-dr17-synspec_rev1.fits'
     apogee_14_file = '../500_pc_KM_rv_cross_match/APOGEE_DR14_allStar-l31c.2.fits'
-    compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
-                             KM.KM_metals, 'paper_plots/compare_all_spec_metals.png')
+    gaia_mh_file = '../gaia_RV_cross_match/gaia_file/K_dwarf_RV_DR3_mh_gaia_spec-result.csv'
+    compare_all_spec_surveys(galah_file, apogee_17_file, apogee_14_file, gaia_mh_file,
+                             KM.KM_metals, 'paper_plots/compare_all_spec_metals_w_gaia_mh.png')
 
     # assign the kinemtic groups
     KM.assign_kinematic_groups(plot_groups=False)
