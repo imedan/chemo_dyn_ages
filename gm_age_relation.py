@@ -969,7 +969,8 @@ def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
 
         R_birth = LZ0_samp / 248.5
 
-        ns[i, :], _ = np.histogram(R_birth, bins=R_birth_bins, density=True)
+        ns[i, :], _ = np.histogram(R_birth, bins=R_birth_bins)
+        ns[i, :] /= np.sum(ns[i, :])
     return np.mean(ns, axis=0), np.std(ns, axis=0)
 
 
