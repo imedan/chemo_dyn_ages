@@ -128,13 +128,10 @@ if __name__ == '__main__':
         age_frac[i, :] = mcmc[1, :]
         age_err[i, :] = q[1, :]
 
-        if i >= 4:
-            break
-
     # save the results
-    np.save('age_grid_kde_test/bounds.npy', bounds)
-    np.save('age_grid_kde_test/age_frac.npy', age_frac)
-    np.save('age_grid_kde_test/age_err.npy', age_err)
+    np.save('age_grid_kde/bounds.npy', bounds)
+    np.save('age_grid_kde/age_frac.npy', age_frac)
+    np.save('age_grid_kde/age_err.npy', age_err)
 
     # calculate the birth radii distributions
     Rb_bins = np.arange(0, 22, 2)
@@ -161,12 +158,10 @@ if __name__ == '__main__':
                                                           age_frac[i, :], age_err[i, :],
                                                           ts, Rb_bins,
                                                           len(np.array(KM.KM_metals['L_Z'])[ev_group]), 1000)
-        if i >= 4:
-            break
 
     # save the results
-    np.save('age_grid_kde_test/Rb_frac.npy', Rb_frac)
-    np.save('age_grid_kde_test/Rb_err.npy', Rb_err)
+    np.save('age_grid_kde/Rb_frac.npy', Rb_frac)
+    np.save('age_grid_kde/Rb_err.npy', Rb_err)
 
     # calculate the bending and breathing params
     sc = SkyCoord(ra=np.array(KM.KM_metals['RA']) * u.deg,
@@ -207,9 +202,6 @@ if __name__ == '__main__':
         Aerr[i] = np.sqrt(np.diag(pcov))[0]
         B[i] = popt[1]
         Berr[i] = np.sqrt(np.diag(pcov))[1]
-
-        if i >= 4:
-            break
 
     # get the average params with age
     A_means = np.zeros(len(age_frac[0, :]))
