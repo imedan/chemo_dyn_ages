@@ -676,7 +676,7 @@ class GM_Age_GALAH(object):
 
             idx = list(self.cat[ev2].index.values)
             
-            X = np.column_stack(((np.array(self.cat.loc[idx,'fe_h'] - (-0.03) * (self.cat.loc[idx,'xmix'] - 8.1)) + 0.5) / 1,
+            X = np.column_stack(((np.array(self.cat.loc[idx,'fe_h']) + 0.5) / 1,
                                   np.array(self.cat.loc[idx,'WVel_gaia']) / 100))
             gm = GaussianMixture(n_components=3).fit(X)
             
@@ -702,11 +702,11 @@ class GM_Age_GALAH(object):
                 
                 dens = ax2.contourf(x, y, np.exp(dens_kde), 20)
                 
-                ax1.set_xlabel(r'[Fe/H] $+0.03 (R_G -8.1)$')
+                ax1.set_xlabel(r'[Fe/H]')
                 ax1.set_ylabel(r'W (km/s)')
                 ax1.set_title('GALAH: %d' % ages[i] + r'$<\tau\leq$' + '%d Gyr' % ages[i + 1])
                 
-                ax2.set_xlabel(r'[Fe/H] $+0.03 (R_G -8.1)$')
+                ax2.set_xlabel(r'[Fe/H]')
                 ax2.set_ylabel(r'W (km/s)')
                 ax2.set_title('Gaussian Mixture: %d' % ages[i] + r'$<\tau\leq$' + '%d Gyr' % ages[i + 1])
                 
@@ -778,7 +778,7 @@ class GM_Age_GALAH(object):
 
                 n, bins = np.histogram(self.cat.loc[idx, 'Age'], bins=self.ts)
 
-                MH_norm = np.array(self.cat.loc[idx,'fe_h'] - (-0.03) * (self.cat.loc[idx,'xmix'] - 8.1))
+                MH_norm = np.array(self.cat.loc[idx,'fe_h'])
                 W = np.array(self.cat.loc[idx,'WVel_gaia'])
                 sampler, flat_samples = mcmc_GM_fit(MH_norm, W, self.gms, self.ts)
 

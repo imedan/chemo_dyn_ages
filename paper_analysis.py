@@ -131,8 +131,7 @@ if __name__ == '__main__':
 
         ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
                     (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax))
-        xs = (np.array(KM.KM_metals['M_H'])[ev_group] -
-              (-0.03) * (np.array(KM.KM_metals['xmix'])[ev_group] - 8.1) - 0.188)
+        xs = np.array(KM.KM_metals['M_H'])[ev_group]
         ys = np.array(KM.KM_metals['gw'])[ev_group]
         sampler, flat_samples = mcmc_GM_fit(xs, ys, GM.gms, ts, progress=False)
 
