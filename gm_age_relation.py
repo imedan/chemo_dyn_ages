@@ -967,7 +967,7 @@ def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
 
         LZ0_samp = LZ0_FeH(age_samp, mh_samp)
 
-        R_birth = LZ0_samp / 235
+        R_birth = LZ0_samp / 248.5
 
         ns[i, :], _ = np.histogram(R_birth, bins=R_birth_bins, density=True)
     return np.mean(ns, axis=0), np.std(ns, axis=0)
