@@ -8,6 +8,8 @@ from scipy.optimize import curve_fit
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from tqdm import tqdm
+from multiprocessing import Pool
+from functools import partial
 
 
 def bootstrap_median(x ,N):
@@ -40,7 +42,56 @@ def bootstrap_mean(x ,N):
         return np.nan, np.nan
 
 
+def age_frac_par_func(x, y, KM_metals, GM, ts, group):
+    """
+    function to find age fractions in parallel
+    """
+    xmin = min(group[:, 0] * (x.max() - x.min()) + x.min())
+    xmax = max(group[:, 0] * (x.max() - x.min()) + x.min())
+    ymin = min(group[:, 1] * (y.max() - y.min()) + y.min())
+    ymax = max(group[:, 1] * (y.max() - y.min()) + y.min())
+
+    bounds = np.array([xmin, xmax, ymin, ymax])
+
+    ev_group = ((KM_metals['gu'] >= xmin) & (KM_metals['gu'] <= xmax) &
+                (KM_metals['xmix'] >= ymin) & (KM_metals['xmix'] <= ymax))
+    xs = np.array(KM_metals['M_H'])[ev_group] - 0.03
+    ys = np.array(KM_metals['gw'])[ev_group]
+    sampler, flat_samples = mcmc_GM_fit(xs, ys, GM.gms, ts, progress=False)
+
+    mcmc = np.percentile(flat_samples, [16, 50, 84], axis=0)
+    q = np.diff(mcmc, axis=0)
+
+    age_frac = mcmc[1, :]
+    age_err = q[1, :]
+    return bounds, age_frac, age_err
+
+
+def RB_frac_par_func(bounds, KM_metals, age_frac, age_err, ts, Rb_bins, i):
+    xmin = bounds[i][0]
+    xmax = bounds[i][1]
+    ymin = bounds[i][2]
+    ymax = bounds[i][3]
+
+    ev_group = ((KM_metals['gu'] >= xmin) & (KM_metals['gu'] <= xmax) &
+                (KM_metals['xmix'] >= ymin) & (KM_metals['xmix'] <= ymax))
+
+    mh_bins = np.arange(-1.5, 0.6, 0.1)
+    mh_mids = np.array([(mh_bins[i] + mh_bins[i + 1]) / 2 for i in range(len(mh_bins) - 1)])
+    mh_stream1, mh_err_stream1 = bootstrap_hist(np.array(KM_metals['M_H'])[ev_group],
+                                                mh_bins, 1000)
+
+    Rb_frac, Rb_err = bootstrap_Rbirth_LZ(mh_stream1, mh_err_stream1, mh_bins,
+                                          age_frac[i, :], age_err[i, :],
+                                          ts, Rb_bins,
+                                          len(np.array(KM_metals['L_Z'])[ev_group]), 1000)
+    return Rb_frac, Rb_err
+
+
 if __name__ == '__main__':
+    # change for number of cores to run in paralell
+    ncores = 4
+
     # initialze the GALAH training
     # need to download galah dr3 files (GALAH_DR3_main_allstar_v2.fits,
     # GALAH_DR3_VAC_ages_v2.fits and GALAH_DR3_VAC_GaiaEDR3_v2.fits)
@@ -121,25 +172,14 @@ if __name__ == '__main__':
     age_frac = np.zeros((len(groups), len(ts) - 1))
     age_err = np.zeros((len(groups), len(ts) - 1))
 
-    for i, group in tqdm(enumerate(groups)):
-        xmin = min(group[:, 0] * (x.max() - x.min()) + x.min())
-        xmax = max(group[:, 0] * (x.max() - x.min()) + x.min())
-        ymin = min(group[:, 1] * (y.max() - y.min()) + y.min())
-        ymax = max(group[:, 1] * (y.max() - y.min()) + y.min())
+    with Pool(ncores) as p:
+        func = partial(age_frac_par_func, x, y, KM.KM_metals, GM, ts)
+        res = p.map(func, groups)
 
-        bounds[i, :] = np.array([xmin, xmax, ymin, ymax])
-
-        ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
-                    (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax))
-        xs = np.array(KM.KM_metals['M_H'])[ev_group]
-        ys = np.array(KM.KM_metals['gw'])[ev_group]
-        sampler, flat_samples = mcmc_GM_fit(xs, ys, GM.gms, ts, progress=False)
-
-        mcmc = np.percentile(flat_samples, [16, 50, 84], axis=0)
-        q = np.diff(mcmc, axis=0)
-
-        age_frac[i, :] = mcmc[1, :]
-        age_err[i, :] = q[1, :]
+    for i, r in enumerate(res):
+        bounds[i, :] = r[0]
+        age_frac[i, :] = r[1]
+        age_err[i, :] = r[2]
 
     # save the results
     np.save('age_grid_kde/bounds.npy', bounds)
@@ -153,24 +193,13 @@ if __name__ == '__main__':
     Rb_frac = np.zeros((len(bounds), len(Rb_bins_mid)))
     Rb_err = np.zeros((len(bounds), len(Rb_bins_mid)))
 
-    for i in tqdm(range(len(bounds))):
-        xmin = bounds[i][0]
-        xmax = bounds[i][1]
-        ymin = bounds[i][2]
-        ymax = bounds[i][3]
+    with Pool(ncores) as p:
+        func = partial(RB_frac_par_func, bounds, KM.KM_metals, age_frac, age_err, ts, Rb_bins)
+        res = p.map(func, range(len(bounds)))
 
-        ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
-                    (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax))
-
-        mh_bins = np.arange(-1.5, 0.6, 0.1)
-        mh_mids = np.array([(mh_bins[i] + mh_bins[i + 1]) / 2 for i in range(len(mh_bins) - 1)])
-        mh_stream1, mh_err_stream1 = bootstrap_hist(np.array(KM.KM_metals['M_H'])[ev_group],
-                                                    mh_bins, 1000)
-
-        Rb_frac[i, :], Rb_err[i, :] = bootstrap_Rbirth_LZ(mh_stream1, mh_err_stream1, mh_bins,
-                                                          age_frac[i, :], age_err[i, :],
-                                                          ts, Rb_bins,
-                                                          len(np.array(KM.KM_metals['L_Z'])[ev_group]), 1000)
+    for i, r in enumerate(res):
+        Rb_frac[i, :] = r[0]
+        Rb_err[i, :] = r[1]
 
     # save the results
     np.save('age_grid_kde/Rb_frac.npy', Rb_frac)

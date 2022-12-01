@@ -158,7 +158,7 @@ def hist_2d_bootstrap(x, y, binx, biny, N):
     """
     n, binsx, binsy = np.histogram2d(x, y, bins=[binx, biny], density=True)
     ns = np.zeros((N, len(n.ravel())))
-    for i in trange(N):
+    for i in range(N):
         idx = np.random.randint(len(x),size=len(x))
         n, binsx, binsy = np.histogram2d(x[idx], y[idx], bins=[binx, biny], density=True)
         ns[i, :] = n.T.ravel()
