@@ -8,9 +8,9 @@ import matplotlib.pylab as plt
 import os
 plt.style.use('%s/mystyle.mplstyle' % os.environ['MPL_STYLES'])
 
+
 from multiprocessing import Pool
 import emcee
-from multiprocessing import Pool
 import random
 
 from sklearn.mixture import GaussianMixture
@@ -327,14 +327,12 @@ def mcmc_GM_fit(MH_norm, W, gms, ts, progress=True):
 
     nwalkers, ndim = pos.shape
 
-    with Pool(4) as pool:
-        sampler = emcee.EnsembleSampler(nwalkers,
-                                        ndim,
-                                        log_probability,
-                                        args=([Xmid.ravel()[ev_y]] + y_comps,
-                                              y[ev_y], yerr[ev_y], ts),
-                                        pool=pool)
-        sampler.run_mcmc(pos, 10000, progress=progress)
+    sampler = emcee.EnsembleSampler(nwalkers,
+                                    ndim,
+                                    log_probability,
+                                    args=([Xmid.ravel()[ev_y]] + y_comps,
+                                          y[ev_y], yerr[ev_y], ts))
+    sampler.run_mcmc(pos, 10000, progress=progress)
 
     tau = sampler.get_autocorr_time(quiet=True)
     flat_samples = sampler.get_chain(discard=int(3 * max(tau)), thin=int(max(tau) / 2), flat=True)
