@@ -1021,9 +1021,9 @@ class KM_metals(object):
         df1 = pd.read_csv(self.metals_file, delim_whitespace=True)
 
         gaia1 = pd.read_csv(self.gaia_file,
-                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15],
+                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18],
                             names=['RA', 'DEC', 'ID', 'plx', 'pmra',
-                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err'],
+                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err', 'ruwe'],
                             skiprows=1)
 
         gaia_dr2 = pd.read_csv(self.gaia_dr2_match_file,
@@ -1040,7 +1040,7 @@ class KM_metals(object):
 
         del gaia1
 
-        KM_metals = df1[(df1['M_H_std'] * 1.95 < self.metal_err_cut)]
+        KM_metals = df1[(df1['M_H_std'] * 1.95 < self.metal_err_cut) & (df1['ruwe'] <= 1.4)]
 
         # get UVW velocity and galactic components
 
