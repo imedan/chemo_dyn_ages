@@ -748,7 +748,7 @@ class GM_Age_GALAH(object):
         for nadds in range(Ntests):
             idx = []
             
-            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 10 * (2 /3)))
             
             axs = [ax1, ax2, ax3]
             
@@ -800,9 +800,9 @@ class GM_Age_GALAH(object):
                 ax.set_ylabel('Fraction of Population')
                 ax.set_xlim((0,14))
                 if npeaks == 2:
-                    ax.set_ylim((0, 0.5))
+                    ax.set_ylim((0, 0.6))
                 else:
-                    ax.set_ylim((0, 0.65))
+                    ax.set_ylim((0, 0.75))
                 ax.grid()
                 ax.legend()
             plt.tight_layout()
