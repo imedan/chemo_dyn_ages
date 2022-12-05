@@ -1103,62 +1103,62 @@ class KM_metals(object):
         polygons = []
         # A1/A2
         ellipse = Polygon(xy=np.column_stack(([-23.2, -60, -60, 30, 15, -3],
-                                              [8.5, 8.75, 9.25, 9.25, 8.7, 8.7])),
+                                              np.array([8.5, 8.75, 9.25, 9.25, 8.7, 8.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         # gamma Leo
         ellipse = Polygon(xy=np.column_stack(([15, 60, 60, 46.5],
-                                              [8.7, 8.7, 8.2, 7.9])),
+                                              np.array([8.7, 8.7, 8.2, 7.9]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #sirius stream
         ellipse = Polygon(xy=np.column_stack(([-3, 15, 46.5, 32.5, -23.2],
-                                              [8.7, 8.7, 7.9, 7.6, 8.5])),
+                                              np.array([8.7, 8.7, 7.9, 7.6, 8.5]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #coma stream
         ellipse = Polygon(xy=np.column_stack(([-23.2, 32.5, 27.5, 24.5, -34.3],
-                                              [8.5, 7.6, 7.2, 7.1, 8])),
+                                              np.array([8.5, 7.6, 7.2, 7.1, 8]) * 248.5 / 235)),
                                 edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #horn???
         ellipse = Polygon(xy=np.column_stack(([32.5, 27.5, 54,59.5, 46.2],
-                                              [7.6, 7.2, 7, 7.2, 7.5])),
+                                              np.array([7.6, 7.2, 7, 7.2, 7.5]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hyades
         ellipse = Polygon(xy=np.column_stack(([-34.3, -12, -31.2, -53.4, -55.2],
-                                              [8, 7.65, 7.2, 7.3, 7.7])),
+                                              np.array([8, 7.65, 7.2, 7.3, 7.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #pleides
         ellipse = Polygon(xy=np.column_stack(([-12, 12, 0, -31.2],
-                                              [7.65, 7.29, 6.8, 7.2])),
+                                              np.array([7.65, 7.29, 6.8, 7.2]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hercules 1
         ellipse = Polygon(xy=np.column_stack(([0, -11.8, -54.5, -54.5, -31.2],
-                                              [6.8, 6.7, 6.7, 7, 7.2])),
+                                              np.array([6.8, 6.7, 6.7, 7, 7.2]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hercules 2
         ellipse = Polygon(xy=np.column_stack(([-11.8, 17.3, 17.3, -65, -65, -54.5],
-                                              [6.7, 6.6, 6.3, 6.3, 6.7, 6.7])),
+                                              np.array([6.7, 6.6, 6.3, 6.3, 6.7, 6.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hercules 3
         ellipse = Polygon(xy=np.column_stack(([17.3, -57.7, -51, 40],
-                                              [6.3, 6, 5.5, 6.1])),
+                                              np.array([6.3, 6, 5.5, 6.1]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #???
         ellipse = Polygon(xy=np.column_stack(([-54.5, -54.5, -73.8, -74.8],
-                                              [6.7, 7, 7.1, 6.7])),
+                                              np.array([6.7, 7, 7.1, 6.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #???
         ellipse = Polygon(xy=np.column_stack(([-65, -65, -74.8, -94, -93],
-                                              [6.3, 6.7, 6.7, 6.7, 6.3])),
+                                              np.array([6.3, 6.7, 6.7, 6.7, 6.3]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         return polygons
