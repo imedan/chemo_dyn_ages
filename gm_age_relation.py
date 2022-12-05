@@ -805,6 +805,7 @@ class GM_Age_GALAH(object):
                     ax.set_ylim((0, 0.65))
                 ax.grid()
                 ax.legend()
+            plt.tight_layout()
             plt.savefig('%s/GM_%d_peak_test_%d.png' % (plot_dir, npeaks, nadds),
                         dpi=100, bbox_inches='tight')
             plt.close('all')
