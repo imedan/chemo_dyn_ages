@@ -748,7 +748,7 @@ class GM_Age_GALAH(object):
         for nadds in range(Ntests):
             idx = []
             
-            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(30, 10))
+            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
             
             axs = [ax1, ax2, ax3]
             
