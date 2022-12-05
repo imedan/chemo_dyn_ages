@@ -562,12 +562,13 @@ class GM_Age_GALAH(object):
         V_phi of Sun in km/s
     """
     def __init__(self, GALAH_path, age_err_limit=0.2, distance_limit=500,
-                 Rsun=8100., zsun=21., vphi_sun=248.5):
+                 Rsun=8100., zsun=21., vphi_sun=248.5, vLSR=235.):
         self.age_err_limit = age_err_limit
         self.distance_limit = distance_limit
         self.Rsun = Rsun
         self.zsun = zsun
         self.vphi_sun = vphi_sun
+        self.vLSR = vLSR
         self.GALAH_path = GALAH_path
         self.cat = self.load_GALAH_data()
 
@@ -640,7 +641,7 @@ class GM_Age_GALAH(object):
         l = np.array(sc.galactic.l)
         b = np.array(sc.galactic.b)
 
-        R_G = (cat['R'] * (cat['VVel_gaia'] + self.vphi_sun)) / self.vphi_sun
+        R_G = (cat['R'] * (cat['VVel_gaia'] + self.vphi_sun)) / self.vLSR
         phi = np.arcsin((1000 / cat['plx_gaia']) * 1e-3 * np.sin(np.radians(l)) / cat['R'])
         cat['xmix'] = R_G * np.cos(phi)
         
@@ -994,7 +995,7 @@ class KM_metals(object):
     Find probable age distributions for KM stars in SN
     """
     def __init__(self,  metals_file, gaia_file, gaia_dr2_match_file,
-                 Rsun=8100., zsun=21., vphi_sun=248.5,
+                 Rsun=8100., zsun=21., vphi_sun=248.5, vLSR=235.,
                  metal_err_cut=0.3):
         self.metals_file = metals_file
         self.gaia_file = gaia_file
@@ -1002,6 +1003,7 @@ class KM_metals(object):
         self.Rsun = Rsun
         self.zsun = zsun
         self.vphi_sun = vphi_sun
+        self.vLSR = vLSR
         self.metal_err_cut = metal_err_cut
 
         # load the data
@@ -1071,7 +1073,7 @@ class KM_metals(object):
 
         KM_metals['R'] /= 1000.
 
-        R_G = (KM_metals['R'] * (KM_metals['gv'] + self.vphi_sun)) / self.vphi_sun
+        R_G = (KM_metals['R'] * (KM_metals['gv'] + self.vphi_sun)) / self.vLSR
         phi = np.arcsin(KM_metals['dist'] * 1e-3 * np.sin(np.radians(l)) / KM_metals['R'])
         KM_metals['xmix'] = R_G * np.cos(phi)
 
