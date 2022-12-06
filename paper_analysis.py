@@ -247,14 +247,52 @@ if __name__ == '__main__':
 
 
     # get the average params with age
-    A_means = np.zeros(len(age_frac[0, :]))
-    A_stds = np.zeros(len(age_frac[0, :]))
-    for i in range(len(age_frac[0, :])):
-        A_means[i], A_stds[i] = bootstrap_mean(abs(A[age_frac[:, i] > 0.5]),
-                                               1000)
+    # calculate the bending and breathing params
+    As = np.zeros((len(age_frac[0, :]), 100))
+    Bs = np.zeros((len(age_frac[0, :]), 100))
 
-    B_means = np.zeros(len(age_frac[0, :]))
-    B_stds = np.zeros(len(age_frac[0, :]))
-    for i in range(len(age_frac[0, :])):
-        B_means[i], B_stds[i] = bootstrap_mean(abs(B[age_frac[:, i] > 0.5]),
-                                               1000)
+    for n in tqdm(range(100)):
+        A = np.zeros((len(bounds), len(age_frac[0, :])))
+        B = np.zeros((len(bounds), len(age_frac[0, :])))
+
+        for i in range(len(bounds)):
+            xmin = bounds[i][0]
+            xmax = bounds[i][1]
+            ymin = bounds[i][2]
+            ymax = bounds[i][3]
+
+            for a in range(len(age_frac[i, :])):
+                frac_rand = np.random.normal(age_frac[i, a], age_err[i, a], 1)
+                if frac_rand > 0.5:
+                    ev_group = ((KM.KM_metals['gu'] >= xmin) & (KM.KM_metals['gu'] <= xmax) &
+                                (KM.KM_metals['xmix'] >= ymin) & (KM.KM_metals['xmix'] <= ymax) &
+                                (l > 50) & (l < 200))
+                    
+                    id_rand = np.random.choice(KM.KM_metals[ev_group].index.tolist(),
+                                               int(len(KM.KM_metals[ev_group]) * frac_rand))
+                    KM_slice = KM.KM_metals.loc[id_rand].reset_index(drop=True)
+
+                    w_means = np.zeros(len(zs) - 1)
+                    w_stds = np.zeros(len(zs) - 1)
+                    for j in range(len(zs) - 1):
+                        ev_z = (KM_slice['gz'] > zs[j]) & (KM_slice['gz'] <= zs[j + 1])
+                        w_means[j], w_stds[j] = bootstrap_median(
+                            np.array(KM_slice['gw'][ev_z] + 7.25), 100)
+
+                    popt, pcov = curve_fit(line, z_mids[~np.isnan(w_means)] / 1000,
+                                           w_means[~np.isnan(w_means)], p0=(2, -1),
+                                           sigma=w_stds[~np.isnan(w_means)],
+                                           absolute_sigma=True)
+                    A[i][a] = popt[0]
+                    B[i][a] = popt[1]
+                else:
+                    A[i][a] = np.nan
+                    B[i][a] = np.nan
+        As[:, n] = np.nanmean(abs(A), axis=0)
+        Bs[:, n] = np.nanmean(abs(B), axis=0)
+
+    A_means = np.nanmean(As, axis=1)
+    A_stds = np.nanstd(As, axis=1)
+
+    B_means = np.nanmean(Bs, axis=1)
+    B_stds = np.nanstd(Bs, axis=1)
