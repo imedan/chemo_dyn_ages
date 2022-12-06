@@ -55,7 +55,7 @@ def age_frac_par_func(x, y, KM_metals, GM, ts, group):
 
     ev_group = ((KM_metals['gu'] >= xmin) & (KM_metals['gu'] <= xmax) &
                 (KM_metals['xmix'] >= ymin) & (KM_metals['xmix'] <= ymax))
-    xs = np.array(KM_metals['M_H'])[ev_group] - 0.01
+    xs = np.array(KM_metals['M_H'])[ev_group] - 0.03
     ys = np.array(KM_metals['gw'])[ev_group]
     sampler, flat_samples = mcmc_GM_fit(xs, ys, GM.gms, ts, progress=False)
 
