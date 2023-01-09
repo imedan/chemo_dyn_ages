@@ -12,3 +12,4 @@ scipy
 functools
 tqdm
 time
+mpl_scatter_density

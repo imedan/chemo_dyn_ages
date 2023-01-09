@@ -8,9 +8,9 @@ import matplotlib.pylab as plt
 import os
 plt.style.use('%s/mystyle.mplstyle' % os.environ['MPL_STYLES'])
 
+
 from multiprocessing import Pool
 import emcee
-from multiprocessing import Pool
 import random
 
 from sklearn.mixture import GaussianMixture
@@ -36,6 +36,8 @@ from tqdm.notebook import trange
 import pickle
 
 from scipy.spatial import cKDTree
+
+import mpl_scatter_density
 
 
 def uvw(ra, de, pmra, pmde, dist, rv):
@@ -156,7 +158,7 @@ def hist_2d_bootstrap(x, y, binx, biny, N):
     """
     n, binsx, binsy = np.histogram2d(x, y, bins=[binx, biny], density=True)
     ns = np.zeros((N, len(n.ravel())))
-    for i in trange(N):
+    for i in range(N):
         idx = np.random.randint(len(x),size=len(x))
         n, binsx, binsy = np.histogram2d(x[idx], y[idx], bins=[binx, biny], density=True)
         ns[i, :] = n.T.ravel()
@@ -325,14 +327,12 @@ def mcmc_GM_fit(MH_norm, W, gms, ts, progress=True):
 
     nwalkers, ndim = pos.shape
 
-    with Pool(4) as pool:
-        sampler = emcee.EnsembleSampler(nwalkers,
-                                        ndim,
-                                        log_probability,
-                                        args=([Xmid.ravel()[ev_y]] + y_comps,
-                                              y[ev_y], yerr[ev_y], ts),
-                                        pool=pool)
-        sampler.run_mcmc(pos, 10000, progress=progress)
+    sampler = emcee.EnsembleSampler(nwalkers,
+                                    ndim,
+                                    log_probability,
+                                    args=([Xmid.ravel()[ev_y]] + y_comps,
+                                          y[ev_y], yerr[ev_y], ts))
+    sampler.run_mcmc(pos, 10000, progress=progress)
 
     tau = sampler.get_autocorr_time(quiet=True)
     flat_samples = sampler.get_chain(discard=int(3 * max(tau)), thin=int(max(tau) / 2), flat=True)
@@ -376,7 +376,8 @@ def bootstrap_std(x, N):
         return np.nan, np.nan
 
 
-def compare_metals(MH_spec, MH_spec_err, MH_photo, ax1, ax2, survey_name):
+def compare_metals(MH_spec, MH_spec_err, MH_photo, MH_photo_err,
+                   MG, ax1, ax2, ax3, survey_name):
     """
     compare photometric metallicities to spec.
     and make the comparison plots
@@ -392,50 +393,62 @@ def compare_metals(MH_spec, MH_spec_err, MH_photo, ax1, ax2, survey_name):
     MH_photo:
         Corresponding photometric metallicities
 
+    MH_photo:
+        Errors in Corresponding photometric metallicities
+
+    MG:
+        absolute mag of star
+
     ax1:
         matplotlib axis for 1-to-1 plot
 
     ax2:
-        matplotlib axis for difference histogram
+        matplotlib axis for relative error histogram
+
+    ax3:
+        matplotlib axis for error as func of MG
     
     survey_name: str
         Label to use for spectroscopic metallicity axis
     """
-    ax1.scatter(MH_photo, MH_spec, c='k', marker='.', label='N = %d' % len(MH_photo))
-    ax1.set_xlim((-1, 0.5))
-    ax1.set_ylim((-1, 0.5))
+    ax1.scatter_density(MH_photo, MH_spec, dpi=20)
+    ax1.scatter(100, 100, marker='.', alpha=0, label='N = %d' % len(MH_photo))
+    ax1.set_xlim((-1, 0.6))
+    ax1.set_ylim((-1, 0.6))
     ax1.plot([-1, 0.5], [-1, 0.5], '--', c='r', label='_nolabel_')
     ax1.set_xlabel(r'$[M/H]_{Photo}$')
     ax1.set_ylabel(r'$%s$' % survey_name)
     ax1.legend()
-    ax1.grid()
+    # ax1.grid()
 
+    m2 = (MH_spec - MH_photo) / np.sqrt(MH_photo_err **2 + MH_spec_err**2)
 
-    t2 = np.pi / 4
-    rotmat2 = np.array([[np.cos(t2), -np.sin(t2)], 
-                        [np.sin(t2),  np.cos(t2)]])
+    Nbin, _, _ = ax2.hist(m2, bins=np.linspace(-5, 5, 50))
+    ax2.grid()
+    median = bootstrap_median(np.array(m2), 1000)
+    sigma = bootstrap_std(np.array(m2), 1000)
+    xcont = np.linspace(-5, 5, 1000)
+    ax2.plot(xcont, np.nanmax(Nbin) * np.exp(-0.5 * (xcont - median[0]) ** 2), '--', c='r',
+             label=r'Median = %.4f$\pm$%.4f,' % median)
+             # label=r'Median = %.4f$\pm$%.4f,' % median + '\n' +
+             #       r'$\sigma$ = %.4f$\pm$%.4f,' % sigma)
+    ax2.legend()
+    ax2.set_xlabel(r'$\frac{%s - [M/H]_{Photo}}{\sqrt{\sigma_{%s}^2 + \sigma_{[M/H]_{Photo}}^2}}$' % (survey_name, survey_name))
+    ax2.set_ylabel('N')
+    ax2.set_ylim((0, max(Nbin) + 0.2 * max(Nbin)))
 
     m2 = MH_spec - MH_photo
 
-    std_tot, std_tot_err = bootstrap_std(m2, 1000)
-    mean_spec, mean_spec_err = bootstrap_mean(np.array(MH_spec_err), 1000)
-
-    sys_err = np.sqrt(std_tot_err ** 2 * (std_tot / np.sqrt(std_tot ** 2 - mean_spec ** 2)) ** 2 + 
-                      mean_spec_err ** 2 * (mean_spec / np.sqrt(std_tot ** 2 - mean_spec ** 2)) ** 2)
-
-    Nbin, _, _ = ax2.hist(m2, bins=np.linspace(-.4, .4, 50), label=r'$\sigma_{tot}=$'+'%.4f+/-%.4f\n' % (std_tot,std_tot_err)+
-                          r'$\sigma_{sys}=$'+'%.4f+/-%.4f' % (np.sqrt(std_tot ** 2 - mean_spec ** 2), sys_err))
-    ax2.grid()
-    median = bootstrap_median(m2, 1000)
-    ax2.axvline(median[0], c='r', linestyle='--', label='Median = %.4f+/-%.4f' % median)
-    ax2.legend()
-    ax2.set_xlabel(r'$%s - [M/H]_{Photo}$' % survey_name)
-    ax2.set_ylabel('N')
-    ax2.set_ylim((0, max(Nbin) + 0.5 * max(Nbin)))
+    ax3.scatter_density(MG, m2, dpi=20)
+    ax3.set_xlabel(r'$M_G$')
+    ax3.set_ylabel(r'$%s - [M/H]_{Photo}$' % survey_name)
+    ax3.set_ylim((-0.6, 0.6))
+    ax3.set_xlim((5, 11))
+    ax3.axhline(0, linestyle='--', c='r')
 
 
-def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
-                             KM_metals, plot_save):
+def compare_all_spec_surveys(galah_file, apogee_17_file, apogee_14_file,
+                             gaia_mh_file, KM_metals, plot_save):
     """
     compare spec metallicities of all surveys
 
@@ -444,11 +457,14 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
     galah_file: str
         path to Galah file
 
-    apogee_16_file: str
-        Path to APOGEE DR16 file
+    apogee_17_file: str
+        Path to APOGEE DR17 file
 
     apogee_14_file: str
         Path to APOGEE DR14 file
+
+    gaia_mh_file: str
+        Path to the gaia RVS and BP/RP M/H file
 
     KM_metals: pd.DataFrame
         photometric metallicity dataframe from KM_Metals()
@@ -462,38 +478,60 @@ def compare_all_spec_surveys(galah_file, apogee_16_file, apogee_14_file,
 
     galah = galah.drop_duplicates(subset='dr3_source_id', keep='first', ignore_index=True)
     galah = galah.rename(columns={"dr3_source_id": "ID"})
-    galah = galah.merge(KM_metals[['M_H', 'ID']], on='ID', how='inner')
+    galah = galah.merge(KM_metals[['M_H', 'M_H_std', 'ID', 'G', 'plx']], on='ID', how='inner')
 
-    hdu=fits.open(apogee_16_file)
+    hdu = fits.open(apogee_17_file)
 
-    apogee = Table(hdu[1].data)[['APOGEE_ID', 'GAIA_SOURCE_ID', 'M_H', 'M_H_ERR']].to_pandas()
-    apogee = apogee.drop_duplicates(subset='GAIA_SOURCE_ID',
+    apogee = Table(hdu[1].data)[['APOGEE_ID', 'GAIAEDR3_SOURCE_ID', 'M_H', 'M_H_ERR']].to_pandas()
+    apogee = apogee.drop_duplicates(subset='GAIAEDR3_SOURCE_ID',
                                     keep='first', ignore_index=True)
     apogee = apogee[abs(apogee['M_H'])<1000.].reset_index()
-    apogee = apogee.rename(columns={"GAIA_SOURCE_ID": "dr2_ID"})
+    apogee = apogee.rename(columns={"GAIAEDR3_SOURCE_ID": "ID"})
     apogee = apogee.rename(columns={"M_H": "M_H_spec"})
-    apogee = apogee.merge(KM_metals[['M_H', 'dr2_ID']][~np.isnan(KM_metals['dr2_ID'])],
-                          on='dr2_ID', how='inner')
+    apogee = apogee.merge(KM_metals[['M_H', 'M_H_std', 'ID', 'G', 'plx']],
+                          on='ID', how='inner')
 
-    hdu=fits.open(apogee_14_file)
+    hdu = fits.open(apogee_14_file)
 
     apdr14 = Table(hdu[1].data)[['APOGEE_ID', 'M_H', 'M_H_ERR']].to_pandas()
     apdr14 = apdr14.drop_duplicates(subset='APOGEE_ID',
                                     keep='first', ignore_index=True)
     apdr14 = apdr14[abs(apdr14['M_H'])<1000.].reset_index()
     apdr14 = apdr14.rename(columns={"M_H": "M_H_spec"})
-    apdr14 = apdr14.merge(apogee[['dr2_ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
-    apdr14 = apdr14.merge(KM_metals[['M_H', 'dr2_ID']][~np.isnan(KM_metals['dr2_ID'])],
-                          on='dr2_ID', how='inner')
+    apdr14 = apdr14.merge(apogee[['ID', 'APOGEE_ID']], on='APOGEE_ID', how='inner')
+    apdr14 = apdr14.merge(KM_metals[['M_H', 'M_H_std', 'ID', 'G', 'plx']],
+                          on='ID', how='inner')
 
-    f, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(20, 30))
+    gaia_mh = pd.read_csv(gaia_mh_file)
+    gaia_mh = gaia_mh.merge(KM_metals[['M_H', 'M_H_std', 'ID', 'G', 'plx']],
+                            left_on='source_id', right_on='ID')
+
+    f, (axs1, axs2, axs3, axs4, axs5) = plt.subplots(5, 3, figsize=(30, 50),
+                                                     subplot_kw={'projection': 'scatter_density'})
 
     compare_metals(apdr14['M_H_spec'], apdr14['M_H_ERR'],
-                   apdr14['M_H'], ax1, ax2, '[M/H]_{APOGEE_{DR14}}')
+                   apdr14['M_H'], apdr14['M_H_std'],
+                   apdr14['G'] + 5 * np.log10(1e-3 * apdr14['plx']) + 5,
+                   axs1[0], axs1[1], axs1[2], '[M/H]_{APOGEE_{DR14}}')
     compare_metals(apogee['M_H_spec'], apogee['M_H_ERR'],
-                   apogee['M_H'], ax3, ax4, '[M/H]_{APOGEE_{DR16}}')
+                   apogee['M_H'], apogee['M_H_std'],
+                   apogee['G'] + 5 * np.log10(1e-3 * apogee['plx']) + 5,
+                   axs2[0], axs2[1], axs2[2], '[M/H]_{APOGEE_{DR17}}')
     compare_metals(galah['fe_h'], galah['e_fe_h'],
-                   galah['M_H'], ax5, ax6, '[Fe/H]_{GALAH_{DR3}}')
+                   galah['M_H'], galah['M_H_std'],
+                   galah['G'] + 5 * np.log10(1e-3 * galah['plx']) + 5,
+                   axs3[0], axs3[1], axs3[2], '[Fe/H]_{GALAH_{DR3}}')
+    ev = ~np.isnan(gaia_mh['mh_gspphot'])
+    compare_metals(gaia_mh['mh_gspphot'][ev], gaia_mh['mh_gspphot_upper'][ev] - gaia_mh['mh_gspphot'][ev],
+                   gaia_mh['M_H'][ev], gaia_mh['M_H_std'][ev],
+                   gaia_mh['G'][ev] + 5 * np.log10(1e-3 * gaia_mh['plx'][ev]) + 5,
+                   axs4[0], axs4[1], axs4[2], '[M/H]_{GSP-Phot}')
+    ev = ~np.isnan(gaia_mh['mh_gspspec'])
+    compare_metals(gaia_mh['mh_gspspec'][ev], gaia_mh['mh_gspspec_upper'][ev] - gaia_mh['mh_gspspec'][ev],
+                   gaia_mh['M_H'][ev], gaia_mh['M_H_std'][ev],
+                   gaia_mh['G'][ev] + 5 * np.log10(1e-3 * gaia_mh['plx'][ev]) + 5,
+                   axs5[0], axs5[1], axs5[2], '[M/H]_{GSP-Spec}')
+    plt.tight_layout()
     plt.savefig(plot_save, dpi=100, bbox_inches='tight')
     plt.close('all')
 
@@ -524,12 +562,13 @@ class GM_Age_GALAH(object):
         V_phi of Sun in km/s
     """
     def __init__(self, GALAH_path, age_err_limit=0.2, distance_limit=500,
-                 Rsun=8100., zsun=21., vphi_sun=248.5):
+                 Rsun=8100., zsun=21., vphi_sun=248.5, vLSR=235.):
         self.age_err_limit = age_err_limit
         self.distance_limit = distance_limit
         self.Rsun = Rsun
         self.zsun = zsun
         self.vphi_sun = vphi_sun
+        self.vLSR = vLSR
         self.GALAH_path = GALAH_path
         self.cat = self.load_GALAH_data()
 
@@ -602,7 +641,7 @@ class GM_Age_GALAH(object):
         l = np.array(sc.galactic.l)
         b = np.array(sc.galactic.b)
 
-        R_G = (cat['R'] * (cat['VVel_gaia'] + self.vphi_sun)) / self.vphi_sun
+        R_G = (cat['R'] * (cat['VVel_gaia'] + self.vphi_sun)) / self.vLSR
         phi = np.arcsin((1000 / cat['plx_gaia']) * 1e-3 * np.sin(np.radians(l)) / cat['R'])
         cat['xmix'] = R_G * np.cos(phi)
         
@@ -636,7 +675,7 @@ class GM_Age_GALAH(object):
 
             idx = list(self.cat[ev2].index.values)
             
-            X = np.column_stack(((np.array(self.cat.loc[idx,'fe_h'] - (-0.03) * (self.cat.loc[idx,'xmix'] - 8.1)) + 0.5) / 1,
+            X = np.column_stack(((np.array(self.cat.loc[idx,'fe_h']) + 0.5) / 1,
                                   np.array(self.cat.loc[idx,'WVel_gaia']) / 100))
             gm = GaussianMixture(n_components=3).fit(X)
             
@@ -662,11 +701,11 @@ class GM_Age_GALAH(object):
                 
                 dens = ax2.contourf(x, y, np.exp(dens_kde), 20)
                 
-                ax1.set_xlabel(r'[Fe/H] $+0.03 (R_G -8.1)$')
+                ax1.set_xlabel(r'[Fe/H]')
                 ax1.set_ylabel(r'W (km/s)')
                 ax1.set_title('GALAH: %d' % ages[i] + r'$<\tau\leq$' + '%d Gyr' % ages[i + 1])
                 
-                ax2.set_xlabel(r'[Fe/H] $+0.03 (R_G -8.1)$')
+                ax2.set_xlabel(r'[Fe/H]')
                 ax2.set_ylabel(r'W (km/s)')
                 ax2.set_title('Gaussian Mixture: %d' % ages[i] + r'$<\tau\leq$' + '%d Gyr' % ages[i + 1])
                 
@@ -709,7 +748,7 @@ class GM_Age_GALAH(object):
         for nadds in range(Ntests):
             idx = []
             
-            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(30, 10))
+            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 10 * (2 /3)))
             
             axs = [ax1, ax2, ax3]
             
@@ -738,7 +777,7 @@ class GM_Age_GALAH(object):
 
                 n, bins = np.histogram(self.cat.loc[idx, 'Age'], bins=self.ts)
 
-                MH_norm = np.array(self.cat.loc[idx,'fe_h'] - (-0.03) * (self.cat.loc[idx,'xmix'] - 8.1))
+                MH_norm = np.array(self.cat.loc[idx,'fe_h'])
                 W = np.array(self.cat.loc[idx,'WVel_gaia'])
                 sampler, flat_samples = mcmc_GM_fit(MH_norm, W, self.gms, self.ts)
 
@@ -761,11 +800,12 @@ class GM_Age_GALAH(object):
                 ax.set_ylabel('Fraction of Population')
                 ax.set_xlim((0,14))
                 if npeaks == 2:
-                    ax.set_ylim((0, 0.5))
+                    ax.set_ylim((0, 0.6))
                 else:
-                    ax.set_ylim((0, 0.65))
+                    ax.set_ylim((0, 0.75))
                 ax.grid()
                 ax.legend()
+            plt.tight_layout()
             plt.savefig('%s/GM_%d_peak_test_%d.png' % (plot_dir, npeaks, nadds),
                         dpi=100, bbox_inches='tight')
             plt.close('all')
@@ -927,9 +967,10 @@ def bootstrap_Rbirth_LZ(mh, mherr, mhbins, age, ageerr, age_bins,
 
         LZ0_samp = LZ0_FeH(age_samp, mh_samp)
 
-        R_birth = LZ0_samp / 235
+        R_birth = LZ0_samp / 248.5
 
-        ns[i, :], _ = np.histogram(R_birth, bins=R_birth_bins, density=True)
+        ns[i, :], _ = np.histogram(R_birth, bins=R_birth_bins)
+        ns[i, :] /= np.sum(ns[i, :])
     return np.mean(ns, axis=0), np.std(ns, axis=0)
 
 
@@ -955,7 +996,7 @@ class KM_metals(object):
     Find probable age distributions for KM stars in SN
     """
     def __init__(self,  metals_file, gaia_file, gaia_dr2_match_file,
-                 Rsun=8100., zsun=21., vphi_sun=248.5,
+                 Rsun=8100., zsun=21., vphi_sun=248.5, vLSR=235.,
                  metal_err_cut=0.3):
         self.metals_file = metals_file
         self.gaia_file = gaia_file
@@ -963,6 +1004,7 @@ class KM_metals(object):
         self.Rsun = Rsun
         self.zsun = zsun
         self.vphi_sun = vphi_sun
+        self.vLSR = vLSR
         self.metal_err_cut = metal_err_cut
 
         # load the data
@@ -980,9 +1022,9 @@ class KM_metals(object):
         df1 = pd.read_csv(self.metals_file, delim_whitespace=True)
 
         gaia1 = pd.read_csv(self.gaia_file,
-                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15],
+                            usecols=[0, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18],
                             names=['RA', 'DEC', 'ID', 'plx', 'pmra',
-                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err'],
+                                   'pmde', 'G', 'BP', 'RP', 'rv', 'rv_err', 'ruwe'],
                             skiprows=1)
 
         gaia_dr2 = pd.read_csv(self.gaia_dr2_match_file,
@@ -999,7 +1041,7 @@ class KM_metals(object):
 
         del gaia1
 
-        KM_metals = df1[(df1['M_H_std'] * 1.95 < self.metal_err_cut)]
+        KM_metals = df1[(df1['M_H_std'] * 1.95 < self.metal_err_cut) & (df1['ruwe'] <= 1.4)]
 
         # get UVW velocity and galactic components
 
@@ -1032,7 +1074,7 @@ class KM_metals(object):
 
         KM_metals['R'] /= 1000.
 
-        R_G = (KM_metals['R'] * (KM_metals['gv'] + self.vphi_sun)) / self.vphi_sun
+        R_G = (KM_metals['R'] * (KM_metals['gv'] + self.vphi_sun)) / self.vLSR
         phi = np.arcsin(KM_metals['dist'] * 1e-3 * np.sin(np.radians(l)) / KM_metals['R'])
         KM_metals['xmix'] = R_G * np.cos(phi)
 
@@ -1062,62 +1104,62 @@ class KM_metals(object):
         polygons = []
         # A1/A2
         ellipse = Polygon(xy=np.column_stack(([-23.2, -60, -60, 30, 15, -3],
-                                              [8.5, 8.75, 9.25, 9.25, 8.7, 8.7])),
+                                              np.array([8.5, 8.75, 9.25, 9.25, 8.7, 8.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         # gamma Leo
         ellipse = Polygon(xy=np.column_stack(([15, 60, 60, 46.5],
-                                              [8.7, 8.7, 8.2, 7.9])),
+                                              np.array([8.7, 8.7, 8.2, 7.9]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #sirius stream
         ellipse = Polygon(xy=np.column_stack(([-3, 15, 46.5, 32.5, -23.2],
-                                              [8.7, 8.7, 7.9, 7.6, 8.5])),
+                                              np.array([8.7, 8.7, 7.9, 7.6, 8.5]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #coma stream
         ellipse = Polygon(xy=np.column_stack(([-23.2, 32.5, 27.5, 24.5, -34.3],
-                                              [8.5, 7.6, 7.2, 7.1, 8])),
+                                              np.array([8.5, 7.6, 7.2, 7.1, 8]) * 248.5 / 235)),
                                 edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #horn???
         ellipse = Polygon(xy=np.column_stack(([32.5, 27.5, 54,59.5, 46.2],
-                                              [7.6, 7.2, 7, 7.2, 7.5])),
+                                              np.array([7.6, 7.2, 7, 7.2, 7.5]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hyades
         ellipse = Polygon(xy=np.column_stack(([-34.3, -12, -31.2, -53.4, -55.2],
-                                              [8, 7.65, 7.2, 7.3, 7.7])),
+                                              np.array([8, 7.65, 7.2, 7.3, 7.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #pleides
         ellipse = Polygon(xy=np.column_stack(([-12, 12, 0, -31.2],
-                                              [7.65, 7.29, 6.8, 7.2])),
+                                              np.array([7.65, 7.29, 6.8, 7.2]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hercules 1
         ellipse = Polygon(xy=np.column_stack(([0, -11.8, -54.5, -54.5, -31.2],
-                                              [6.8, 6.7, 6.7, 7, 7.2])),
+                                              np.array([6.8, 6.7, 6.7, 7, 7.2]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hercules 2
         ellipse = Polygon(xy=np.column_stack(([-11.8, 17.3, 17.3, -65, -65, -54.5],
-                                              [6.7, 6.6, 6.3, 6.3, 6.7, 6.7])),
+                                              np.array([6.7, 6.6, 6.3, 6.3, 6.7, 6.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #hercules 3
         ellipse = Polygon(xy=np.column_stack(([17.3, -57.7, -51, 40],
-                                              [6.3, 6, 5.5, 6.1])),
+                                              np.array([6.3, 6, 5.5, 6.1]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #???
         ellipse = Polygon(xy=np.column_stack(([-54.5, -54.5, -73.8, -74.8],
-                                              [6.7, 7, 7.1, 6.7])),
+                                              np.array([6.7, 7, 7.1, 6.7]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         #???
         ellipse = Polygon(xy=np.column_stack(([-65, -65, -74.8, -94, -93],
-                                              [6.3, 6.7, 6.7, 6.7, 6.3])),
+                                              np.array([6.3, 6.7, 6.7, 6.7, 6.3]) * 248.5 / 235)),
                           edgecolor='r', fc='None', lw=2)
         polygons.append(ellipse)
         return polygons
