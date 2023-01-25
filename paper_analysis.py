@@ -177,7 +177,9 @@ if __name__ == '__main__':
     # download apogee dr17 from: https://data.sdss.org/sas/dr17/apogee/spectro/aspcap/dr17/synspec_rev1/allStarLite-dr17-synspec_rev1.fits
     # download apogee dr14 data from: https://data.sdss.org/sas/dr16/apogee/spectro/aspcap/r12/l33/allStar-r12-l33.fits
     # file with gaia RVS and BP/RP spectra metallicities can be quieried from the gaia archive by:
-    # SELECT g3.source_id, g3spec.mh_gspphot, g3spec.mh_gspphot_lower, g3spec.mh_gspphot_upper, g3spec.ag_gspphot, g3spec.ag_gspphot_lower, g3spec.ag_gspphot_upper, g3spec.mh_gspspec, g3spec.mh_gspspec_lower, g3spec.mh_gspspec_upper
+    # SELECT g3.source_id, g3.ra, g3.dec, g3spec.mh_gspphot, g3spec.mh_gspphot_lower, g3spec.mh_gspphot_upper, g3spec.ag_gspphot, g3spec.ag_gspphot_lower,
+    # g3spec.ag_gspphot_upper, g3spec.teff_gspphot, g3spec.logg_gspphot, g3spec.azero_gspphot, g3spec.ebpminrp_gspphot, g3spec.mg_gspphot, g3spec.libname_gspphot,
+    # g3spec.mh_gspspec, g3spec.mh_gspspec_lower, g3spec.mh_gspspec_upper, g3spec.logg_gspspec
     # FROM gaiadr3.gaia_source as g3
     # JOIN gaiadr3.astrophysical_parameters as g3spec on g3.source_id = g3spec.source_id
     # WHERE g3.phot_g_mean_mag <= 14 AND

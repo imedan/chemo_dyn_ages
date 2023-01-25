@@ -39,6 +39,8 @@ from scipy.spatial import cKDTree
 
 import mpl_scatter_density
 
+import gdr3apcal
+
 
 def uvw(ra, de, pmra, pmde, dist, rv):
     """
@@ -522,11 +524,16 @@ def compare_all_spec_surveys(galah_file, apogee_17_file, apogee_14_file,
                    galah['G'] + 5 * np.log10(1e-3 * galah['plx']) + 5,
                    axs3[0], axs3[1], axs3[2], '[Fe/H]_{GALAH_{DR3}}')
     ev = ~np.isnan(gaia_mh['mh_gspphot'])
+    # calib the data
+    calib = gdr3apcal.GaiaDR3_GSPPhot_cal()
+    gaia_mh['mh_gspphot'][ev] = calib.calibrateMetallicity(gaia_mh[ev].reset_index(drop=True))
     compare_metals(gaia_mh['mh_gspphot'][ev], gaia_mh['mh_gspphot_upper'][ev] - gaia_mh['mh_gspphot'][ev],
                    gaia_mh['M_H'][ev], gaia_mh['M_H_std'][ev],
                    gaia_mh['G'][ev] + 5 * np.log10(1e-3 * gaia_mh['plx'][ev]) + 5,
                    axs4[0], axs4[1], axs4[2], '[M/H]_{GSP-Phot}')
     ev = ~np.isnan(gaia_mh['mh_gspspec'])
+    # calib the data
+    gaia_mh['mh_gspspec'][ev] = gaia_mh['mh_gspspec'][ev] + 0.274 * gaia_mh['logg_gspspec'][ev] ** 0 - 0.1373 * gaia_mh['logg_gspspec'][ev] ** 1 - 0.0050 * gaia_mh['logg_gspspec'][ev] ** 2 + 0.0048 * gaia_mh['logg_gspspec'][ev] ** 3
     compare_metals(gaia_mh['mh_gspspec'][ev], gaia_mh['mh_gspspec_upper'][ev] - gaia_mh['mh_gspspec'][ev],
                    gaia_mh['M_H'][ev], gaia_mh['M_H_std'][ev],
                    gaia_mh['G'][ev] + 5 * np.log10(1e-3 * gaia_mh['plx'][ev]) + 5,
