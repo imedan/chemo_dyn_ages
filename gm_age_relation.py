@@ -40,6 +40,8 @@ from scipy.spatial import cKDTree
 import mpl_scatter_density
 
 import gdr3apcal
+from astropy.visualization import LogStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
 
 
 def uvw(ra, de, pmra, pmde, dist, rv):
@@ -413,7 +415,9 @@ def compare_metals(MH_spec, MH_spec_err, MH_photo, MH_photo_err,
     survey_name: str
         Label to use for spectroscopic metallicity axis
     """
-    ax1.scatter_density(MH_photo, MH_spec, dpi=20)
+    norm = ImageNormalize(stretch=LogStretch())
+    dens = ax1.scatter_density(MH_photo, MH_spec, dpi=20, norm=norm)
+    plt.colorbar(dens, ax=ax1, label='N')
     ax1.scatter(100, 100, marker='.', alpha=0, label='N = %d' % len(MH_photo))
     ax1.set_xlim((-1, 0.6))
     ax1.set_ylim((-1, 0.6))
@@ -431,7 +435,7 @@ def compare_metals(MH_spec, MH_spec_err, MH_photo, MH_photo_err,
     sigma = bootstrap_std(np.array(m2), 1000)
     xcont = np.linspace(-5, 5, 1000)
     ax2.plot(xcont, np.nanmax(Nbin) * np.exp(-0.5 * (xcont - median[0]) ** 2), '--', c='r',
-             label=r'Median = %.4f$\pm$%.4f,' % median)
+             label=r'Median = %.4f$\pm$%.4f' % median)
              # label=r'Median = %.4f$\pm$%.4f,' % median + '\n' +
              #       r'$\sigma$ = %.4f$\pm$%.4f,' % sigma)
     ax2.legend()
@@ -441,10 +445,12 @@ def compare_metals(MH_spec, MH_spec_err, MH_photo, MH_photo_err,
 
     m2 = MH_spec - MH_photo
 
-    ax3.scatter_density(MG, m2, dpi=20)
+    norm = ImageNormalize(stretch=LogStretch())
+    dens = ax3.scatter_density(MG, m2, dpi=20, norm=norm)
+    plt.colorbar(dens, ax=ax3, label='N')
     ax3.set_xlabel(r'$M_G$')
     ax3.set_ylabel(r'$%s - [M/H]_{Photo}$' % survey_name)
-    ax3.set_ylim((-0.6, 0.6))
+    ax3.set_ylim((-0.75, 0.75))
     ax3.set_xlim((5, 11))
     ax3.axhline(0, linestyle='--', c='r')
 
@@ -508,7 +514,7 @@ def compare_all_spec_surveys(galah_file, apogee_17_file, apogee_14_file,
     gaia_mh = gaia_mh.merge(KM_metals[['M_H', 'M_H_std', 'ID', 'G', 'plx']],
                             left_on='source_id', right_on='ID')
 
-    f, (axs1, axs2, axs3, axs4, axs5) = plt.subplots(5, 3, figsize=(30, 50),
+    f, (axs1, axs2, axs3, axs4, axs5) = plt.subplots(5, 3, figsize=(35, 50),
                                                      subplot_kw={'projection': 'scatter_density'})
 
     compare_metals(apdr14['M_H_spec'], apdr14['M_H_ERR'],
