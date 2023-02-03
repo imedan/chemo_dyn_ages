@@ -514,6 +514,8 @@ def compare_all_spec_surveys(galah_file, apogee_17_file, apogee_14_file,
     gaia_mh = gaia_mh.merge(KM_metals[['M_H', 'M_H_std', 'ID', 'G', 'plx']],
                             left_on='source_id', right_on='ID')
 
+    plt.rcParams.update({'font.size': 30})
+
     f, (axs1, axs2, axs3, axs4, axs5) = plt.subplots(5, 3, figsize=(35, 50),
                                                      subplot_kw={'projection': 'scatter_density'})
 
